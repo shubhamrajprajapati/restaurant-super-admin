@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Filament\Panel;
+use Filament\Models\Contracts\FilamentUser;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, HasUuids;
 
@@ -48,5 +50,10 @@ class User extends Authenticatable
             'password' => 'hashed',
             'otp' => 'integer',
         ];
+    }
+    
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
     }
 }
