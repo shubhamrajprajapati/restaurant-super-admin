@@ -50,14 +50,17 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('ssh_host')
                     ->label('SSH Host')
+                    ->prefixIcon('heroicon-o-server')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('ssh_username')
                     ->label('SSH Username')
+                    ->prefixIcon('heroicon-o-at-symbol')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('ssh_password')
                     ->label('SSH Password')
+                    ->prefixIcon('heroicon-o-lock-closed')
                     ->required()
                     ->password()
                     ->revealable()
@@ -70,6 +73,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->hidden(),
                 Forms\Components\TextInput::make('ssh_port')
                     ->label('SSH Port')
+                    ->prefixIcon('heroicon-o-key')
                     ->required()
                     ->numeric()
                     ->default(22),
