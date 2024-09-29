@@ -21,6 +21,12 @@ class DatabaseSeeder extends Seeder
             'password' => 'Shubham@123',
         ]);
 
+        User::factory()->create([
+            'name' => 'Restaurant Admin',
+            'email' => 'super-admin@menuempire.com',
+            'password' => 'Rakesh@123',
+        ]);
+
         $this->call(RestaurantSeeder::class);
         $this->call(RestaurantFTPDetailsSeeder::class);
         $this->call(RestaurantSSHDetailsSeeder::class);
