@@ -28,24 +28,24 @@ class ManageRestaurantSSH extends ManageRelatedRecords
     public static function getNavigationBadge(): string|null
     {
         // Extensions to check
-        $extensionsToCheck = [
-            "BCMath", "Ctype", "cURL", "DOM", "Fileinfo", "JSON",
-            "Mbstring", "OpenSSL", "PCRE", "PDO", "Tokenizer", "XML"
-        ];
-        preg_match("#^\d.\d#", PHP_VERSION, $match);
+        // $extensionsToCheck = [
+        //     "BCMath", "Ctype", "cURL", "DOM", "Fileinfo", "JSON",
+        //     "Mbstring", "OpenSSL", "PCRE", "PDO", "Tokenizer", "XML"
+        // ];
+        // preg_match("#^\d.\d#", PHP_VERSION, $match);
         // echo $match[0]; 
-        $systemCheck = json_decode(shell_exec('C:\Users\hp\shubham.bat'));
+        // $systemCheck = json_decode(shell_exec('C:\Users\hp\shubham.bat'));
         // Check if each extension is installed
-        foreach ($extensionsToCheck as $ext) {
-            // Convert to lowercase for case-insensitive comparison
-            $extLower = strtolower($ext);
+        // foreach ($extensionsToCheck as $ext) {
+        //     // Convert to lowercase for case-insensitive comparison
+        //     $extLower = strtolower($ext);
 
-            if (in_array($extLower, $systemCheck->modules)) {
-                // echo "$ext is installed.\n";
-            } else {
-                // echo "$ext is NOT installed.\n";
-            }
-        }
+        //     if (in_array($extLower, $systemCheck->modules)) {
+        //         // echo "$ext is installed.\n";
+        //     } else {
+        //         // echo "$ext is NOT installed.\n";
+        //     }
+        // }
         // dd($systemCheck);
         // Get the ID of the currently open record
         $currentId = request()->route('record');
