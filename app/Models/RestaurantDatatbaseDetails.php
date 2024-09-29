@@ -7,22 +7,29 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 
-class RestaurantFTPDetails extends Model implements Sortable
+class RestaurantDatatbaseDetails extends Model
 {
     use HasFactory, SoftDeletes, HasUuids, SortableTrait;
 
     protected $fillable = [
         'restaurant_id',
-        'server',
+
+        'connection',
+        'host',
+        'port',
+        'database',
         'username',
         'password',
-        'port',
-        'directory',
         'active',
+
+        'name',
+        'default_cmd',
+        'is_valid',
+
         'order_column',
+        
         'updated_by_user_id',
         'created_by_user_id',
     ];
@@ -31,6 +38,7 @@ class RestaurantFTPDetails extends Model implements Sortable
         'port' => 'integer',
         'active' => 'boolean',
         'order_column' => 'integer',
+        'is_valid' => 'boolean',
     ];
 
     public function restaurant(): BelongsTo

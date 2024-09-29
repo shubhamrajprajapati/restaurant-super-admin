@@ -25,9 +25,9 @@ class SSHService
 
     public function executeSimpleCommand($command)
     {
-        return $this->ssh->exec($command, function($str){
-            echo $str;
-        });
+        $batchContent = file_get_contents(base_path('installation/system-check-inline.sh'));
+        // return $batchContent;
+        return dd(json_decode($this->ssh->exec($batchContent)));
     }
 
     public function executeIntractiveCommand($command)

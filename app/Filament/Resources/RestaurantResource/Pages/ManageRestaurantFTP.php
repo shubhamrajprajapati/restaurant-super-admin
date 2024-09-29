@@ -41,37 +41,37 @@ class ManageRestaurantFTP extends ManageRelatedRecords
     {
         return $form
             ->schema([
-                Forms\Components\ToggleButtons::make('ftp_active')
+                Forms\Components\ToggleButtons::make('active')
                     ->default(false)
                     ->label('Active')
                     ->boolean()
                     ->inline()
                     ->grouped()
                     ->columnSpanFull(),
-                Forms\Components\TextInput::make('ftp_server')
+                Forms\Components\TextInput::make('server')
                     ->label('FTP Server')
                     ->prefixIcon('heroicon-o-server')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('ftp_username')
+                Forms\Components\TextInput::make('username')
                     ->label('FTP Username')
                     ->prefixIcon('heroicon-o-at-symbol')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('ftp_password')
+                Forms\Components\TextInput::make('password')
                     ->label('FTP Password')
                     ->prefixIcon('heroicon-o-lock-closed')
                     ->required()
                     ->password()
                     ->revealable()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('ftp_port')
+                Forms\Components\TextInput::make('port')
                     ->label('FTP Port')
                     ->prefixIcon('heroicon-o-key')
                     ->required()
                     ->numeric()
                     ->default(21),
-                Forms\Components\TextInput::make('ftp_directory')
+                Forms\Components\TextInput::make('directory')
                     ->label('FTP Directory')
                     ->prefixIcon('heroicon-o-folder')
                     ->maxLength(255),
@@ -81,9 +81,9 @@ class ManageRestaurantFTP extends ManageRelatedRecords
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('ftp_server')
+            ->recordTitleAttribute('server')
             ->columns([
-                Tables\Columns\TextColumn::make('ftp_server')
+                Tables\Columns\TextColumn::make('server')
                     ->label('Server')
                     ->searchable()
                     ->icon('heroicon-o-document-duplicate')
@@ -91,7 +91,7 @@ class ManageRestaurantFTP extends ManageRelatedRecords
                     ->copyable()
                     ->copyMessage('Copied!')
                     ->copyMessageDuration(1500),
-                Tables\Columns\TextColumn::make('ftp_username')
+                Tables\Columns\TextColumn::make('username')
                     ->label('Username')
                     ->searchable()
                     ->icon('heroicon-o-document-duplicate')
@@ -99,12 +99,12 @@ class ManageRestaurantFTP extends ManageRelatedRecords
                     ->copyable()
                     ->copyMessage('Copied!')
                     ->copyMessageDuration(1500),
-                Tables\Columns\TextColumn::make('ftp_port')
+                Tables\Columns\TextColumn::make('port')
                     ->label('Port')
                     ->badge()
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('ftp_directory')
+                Tables\Columns\TextColumn::make('directory')
                     ->label('Directory')
                     ->searchable()
                     ->icon('heroicon-o-document-duplicate')
@@ -112,7 +112,7 @@ class ManageRestaurantFTP extends ManageRelatedRecords
                     ->copyable()
                     ->copyMessage('Copied!')
                     ->copyMessageDuration(1500),
-                Tables\Columns\ToggleColumn::make('ftp_active')
+                Tables\Columns\ToggleColumn::make('active')
                     ->label('Active')
                     ->onIcon('heroicon-o-eye')
                     ->onColor('success')

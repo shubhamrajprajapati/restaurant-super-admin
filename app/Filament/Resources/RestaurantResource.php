@@ -4,8 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RestaurantResource\Pages;
 use Filament\Resources\Pages\Page;
-use App\Filament\Resources\RestrauntResource\RelationManagers\FtpRelationManager;
-use App\Filament\Resources\RestrauntResource\RelationManagers\SshRelationManager;
 use App\Models\Restaurant;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -61,12 +59,17 @@ class RestaurantResource extends Resource
                                     ->schema([
                                         Forms\Components\FileUpload::make('logo')
                                             ->extraAttributes(['class' => 'mx-auto'])
+                                            ->disk('public')
+                                            ->directory('restaurant-logos')
                                             ->avatar()
                                             ->image()
                                             ->hiddenLabel()
                                             ->imageEditor()
                                             ->circleCropper()
                                             ->required()
+                                            ->maxSize(1024)
+                                            ->downloadable()
+                                            ->openable()
                                             ->columnSpanFull(),
                                     ]),
                                 Forms\Components\Fieldset::make('Restaurant Name & Domain Url')
@@ -225,8 +228,6 @@ class RestaurantResource extends Resource
     public static function getRelations(): array
     {
         return [
-            // FtpRelationManager::class,
-            // SshRelationManager::class,
         ];
     }
 
@@ -237,6 +238,7 @@ class RestaurantResource extends Resource
             'create' => Pages\CreateRestaurant::route('/create'),
             'edit' => Pages\EditRestaurant::route('/{record}/edit'),
             'ssh' => Pages\ManageRestaurantFTP::route('/{record}/ssh'),
+            'db' => Pages\ManageRestaurantDB::route('/{record}/db'),
             'ftp' => Pages\ManageRestaurantSSH::route('/{record}/ftp'),
         ];
     }
@@ -253,6 +255,7 @@ class RestaurantResource extends Resource
     {
         return $page->generateNavigationItems([
             Pages\EditRestaurant::class,
+            Pages\ManageRestaurantDB::class,
             Pages\ManageRestaurantSSH::class,
             Pages\ManageRestaurantFTP::class,
         ]);

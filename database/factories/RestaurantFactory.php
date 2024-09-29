@@ -40,8 +40,8 @@ class RestaurantFactory extends Factory
             'shutdown_msg' => $this->faker->sentence,
             // 'order_column' => $this->faker->optional()->numberBetween(1, 100), // It'll be generated automatically by spatie/eloquent-sortable package
             'other_details' => $this->faker->optional()->randomElement([
-                json_encode(['key1' => 'value1', 'key2' => 'value2']),
-                json_encode(['foo' => 'bar', 'baz' => 'qux']),
+                [['key' => 'key1', 'value' => 'value1']],
+                [['key' => 'key2', 'value' => 'value2']],
             ]), // Optional JSON data
             'updated_by_user_id' => User::factory(), // Assuming you have a User model factory
             'created_by_user_id' => User::factory(),

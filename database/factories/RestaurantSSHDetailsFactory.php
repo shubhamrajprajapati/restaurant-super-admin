@@ -24,12 +24,12 @@ class RestaurantSSHDetailsFactory extends Factory
         return [
             'id' => Str::uuid(), // Generate a UUID
             'restaurant_id' => Restaurant::factory(), // Link to a Restaurant
-            'ssh_host' => $this->faker->ipv4, // Random SSH host (IPv4)
-            'ssh_username' => $this->faker->userName, // Random SSH username
-            'ssh_password' => $this->faker->password, // Random SSH password
-            'ssh_private_key' => $this->faker->optional()->text(100), // Optional private key
-            'ssh_port' => $this->faker->numberBetween(1, 65535), // Random SSH port
-            'ssh_active' => $this->faker->boolean, // Random active status
+            'host' => $this->faker->ipv4, // Random SSH host (IPv4)
+            'username' => $this->faker->userName, // Random SSH username
+            'password' => $this->faker->password, // Random SSH password
+            'private_key' => $this->faker->optional()->text(100), // Optional private key
+            'port' => $this->faker->numberBetween(1, 65535), // Random SSH port
+            'active' => $this->faker->boolean, // Random active status
             // 'order_column' => $this->faker->optional()->numberBetween(1, 100), // It'll be generated automatically by spatie/eloquent-sortable package
             'updated_by_user_id' => User::factory(), // Assuming you have a User model factory
             'created_by_user_id' => User::factory(),

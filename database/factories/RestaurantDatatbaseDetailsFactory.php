@@ -3,17 +3,17 @@
 namespace Database\Factories;
 
 use App\Models\Restaurant;
-use App\Models\RestaurantFTPDetails;
+use App\Models\RestaurantDatatbaseDetails;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RestaurantFTPDetails>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RestaurantDatatbaseDetails>
  */
-class RestaurantFTPDetailsFactory extends Factory
+class RestaurantDatatbaseDetailsFactory extends Factory
 {
-    protected $model = RestaurantFTPDetails::class;
+    protected $model = RestaurantDatatbaseDetails::class;
     /**
      * Define the model's default state.
      *
@@ -24,11 +24,12 @@ class RestaurantFTPDetailsFactory extends Factory
         return [
             'id' => Str::uuid(), // Generate a UUID
             'restaurant_id' => Restaurant::factory(), // Link to a Restaurant
-            'server' => $this->faker->ipv4, // Random FTP server (IPv4)
-            'username' => $this->faker->userName, // Random FTP username
-            'password' => $this->faker->password, // Random FTP password
-            'port' => $this->faker->numberBetween(21, 65535), // Random FTP port
-            'directory' => $this->faker->optional()->word, // Optional directory
+
+            'host' => $this->faker->ipv4, // Random SSH host (IPv4)
+            'port' => $this->faker->numberBetween(1, 65535), // Random SSH port
+            'database' => $this->faker->word,
+            'username' => $this->faker->userName, // Random SSH username
+            'password' => $this->faker->password, // Random SSH password
             'active' => $this->faker->boolean, // Random active status
             // 'order_column' => $this->faker->optional()->numberBetween(1, 100), // It'll be generated automatically by spatie/eloquent-sortable package
             'updated_by_user_id' => User::factory(), // Assuming you have a User model factory

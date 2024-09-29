@@ -15,12 +15,12 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('restaurant_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
 
-            $table->string('ftp_server');
-            $table->string('ftp_username');
-            $table->string('ftp_password');
-            $table->integer('ftp_port')->default(21); // Default FTP port
-            $table->string('ftp_directory')->nullable(); // Optional directory
-            $table->boolean('ftp_active')->default(true); // To activate/deactivate FTP details
+            $table->string('server');
+            $table->string('username');
+            $table->string('password');
+            $table->integer('port')->default(21); // Default FTP port
+            $table->string('directory')->nullable(); // Optional directory
+            $table->boolean('active')->default(false); // To activate/deactivate FTP details
 
             $table->unsignedSmallInteger('order_column')->nullable();
 

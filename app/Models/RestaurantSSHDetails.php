@@ -17,21 +17,25 @@ class RestaurantSSHDetails extends Model implements Sortable
 
     protected $fillable = [
         'restaurant_id',
-        'ssh_host',
-        'ssh_username',
-        'ssh_password',
-        'ssh_private_key',
-        'ssh_port',
-        'ssh_active',
+        'host',
+        'username',
+        'password',
+        'private_key',
+        'port',
+        'active',
+        'name',
+        'default_cmd',
+        'is_valid',
         'order_column',
         'updated_by_user_id',
         'created_by_user_id',
     ];
 
     protected $casts = [
-        'ssh_port' => 'integer',
-        'ssh_active' => 'boolean',
+        'port' => 'integer',
+        'active' => 'boolean',
         'order_column' => 'integer',
+        'is_valid' => 'boolean',
     ];
 
     public function restaurant(): BelongsTo

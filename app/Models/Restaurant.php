@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
@@ -59,14 +60,19 @@ class Restaurant extends Model implements Sortable
         'other_details' => 'array',
     ];
 
-    public function ftp(): HasMany
+    public function ftp(): HasOne
     {
-        return $this->hasMany(related: RestaurantFTPDetails::class);
+        return $this->hasOne(related: RestaurantFTPDetails::class);
     }
 
-    public function ssh(): HasMany
+    public function ssh(): HasOne
     {
-        return $this->hasMany(related: RestaurantSSHDetails::class);
+        return $this->hasOne(related: RestaurantSSHDetails::class);
+    }
+
+    public function db(): HasOne
+    {
+        return $this->hasOne(related: RestaurantDatatbaseDetails::class);
     }
 
     public function creator(): BelongsTo
