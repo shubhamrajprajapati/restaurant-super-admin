@@ -168,7 +168,6 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                         Action::make('edit')
                             ->label('Change Default SSH')
                             ->icon('heroicon-m-pencil-square')
-                            ->labeledFrom('md')
                             ->url(function (RestaurantSSHDetails $record) {
                                 return ManageRestaurantSSH::getUrl(parameters: [
                                     'tableAction' => EditAction::getDefaultName(),
@@ -203,11 +202,11 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
     {
         return $infolist
             ->state($this->serverInfo)
-            ->columns(['lg' => 12])
+            ->columns(['md' => 12])
             ->schema([
                 Infolists\Components\Section::make('Server Environment Details')
                     ->description('Overview of the current software versions running on the server.')
-                    ->columns(['lg' => 12])
+                    ->columns(['sm' => 12])
                     ->collapsible()
                     ->compact()
                     ->columnSpanFull()
@@ -220,10 +219,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                     ->schema([
                         Infolists\Components\Section::make('Apache')
                             ->description(fn () => $this->serverInfo['apache']['description'])
-                            ->columns()
+                            ->columns(2)
                             ->icon(fn () => $this->serverInfo['apache']['icon'])
                             ->iconColor(fn () => $this->serverInfo['apache']['color'])
-                            ->columnSpan(['lg' => 4])
+                            ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
                             ->extraAttributes(fn () => $this->serverInfo['apache']['extraAttributes'])
@@ -245,10 +244,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ]),
                         Infolists\Components\Section::make('Nginx')
                             ->description(fn () => $this->serverInfo['nginx']['description'])
-                            ->columns()
+                            ->columns(2)
                             ->icon(fn () => $this->serverInfo['nginx']['icon'])
                             ->iconColor(fn () => $this->serverInfo['nginx']['color'])
-                            ->columnSpan(['lg' => 4])
+                            ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
                             ->extraAttributes(fn () => $this->serverInfo['nginx']['extraAttributes'])
@@ -270,10 +269,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ]),
                         Infolists\Components\Section::make('Git')
                             ->description(fn () => $this->serverInfo['git']['description'])
-                            ->columns()
+                            ->columns(2)
                             ->icon(fn () => $this->serverInfo['git']['icon'])
                             ->iconColor(fn () => $this->serverInfo['git']['color'])
-                            ->columnSpan(['lg' => 4])
+                            ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
                             ->extraAttributes(fn () => $this->serverInfo['git']['extraAttributes'])
@@ -295,10 +294,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ]),
                         Infolists\Components\Section::make('MySQL')
                             ->description(fn () => $this->serverInfo['mysql']['description'])
-                            ->columns()
+                            ->columns(2)
                             ->icon(fn () => $this->serverInfo['mysql']['icon'])
                             ->iconColor(fn () => $this->serverInfo['mysql']['color'])
-                            ->columnSpan(['lg' => 4])
+                            ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
                             ->extraAttributes(fn () => $this->serverInfo['mysql']['extraAttributes'])
@@ -320,10 +319,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ]),
                         Infolists\Components\Section::make('Composer')
                             ->description(fn () => $this->serverInfo['composer']['description'])
-                            ->columns()
+                            ->columns(2)
                             ->icon(fn () => $this->serverInfo['composer']['icon'])
                             ->iconColor(fn () => $this->serverInfo['composer']['color'])
-                            ->columnSpan(['lg' => 4])
+                            ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
                             ->extraAttributes(fn () => $this->serverInfo['composer']['extraAttributes'])
@@ -345,10 +344,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ]),
                         Infolists\Components\Section::make('PHP')
                             ->description(fn () => $this->serverInfo['php']['description'])
-                            ->columns()
+                            ->columns(2)
                             ->icon(fn () => $this->serverInfo['php']['icon'])
                             ->iconColor(fn () => $this->serverInfo['php']['color'])
-                            ->columnSpan(['lg' => 4])
+                            ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
                             ->extraAttributes(fn () => $this->serverInfo['php']['extraAttributes'])
