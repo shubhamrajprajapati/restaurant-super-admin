@@ -1,10 +1,10 @@
 <x-filament-panels::page>
     @if ($this->defaultSSH->id)
         {{ $this->defaultSSHInfolist }}
+        {{ $this->infolist }}
     @else
         {{ $this->table }}
     @endif
-    {{ $this->infolist }}
 
     <x-filament-panels::form wire:submit="save">
         {{ $this->form }}
