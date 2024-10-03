@@ -16,6 +16,7 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -62,7 +63,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             try {
                 $sshConnected = new SSHService($this->defaultSSH);
 
-                if (! $sshConnected->isConnected()) {
+                if (!$sshConnected->isConnected()) {
                     return 'Error: SSH connection not established.';
                 }
 
@@ -71,7 +72,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                 $this->serverInfo = json_decode($sshConnected->executeSimpleCommand($command), true);
                 $this->arrangeDefaultSSH();
             } catch (\Exception $e) {
-                return 'Error: '.$e->getMessage();
+                return 'Error: ' . $e->getMessage();
             }
         }
     }
@@ -178,22 +179,48 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                     ])
                     ->schema([
                         Infolists\Components\TextEntry::make('name')
-                            ->label('Name Identifier'),
+                            ->label('Name Identifier')->copyable()
+                            ->icon('heroicon-o-document-duplicate')
+                            ->iconPosition(IconPosition::After)
+                            ->copyMessage('Copied!')
+                            ->copyMessageDuration(1500),
                         Infolists\Components\TextEntry::make('default_cmd')
                             ->label('Default Command')
-                            ->default('not set'),
+                            ->icon('heroicon-o-document-duplicate')
+                            ->iconPosition(IconPosition::After)
+                            ->default('not set')
+                            ->copyable()
+                            ->copyMessage('Copied!')
+                            ->copyMessageDuration(1500),
                         Infolists\Components\TextEntry::make('host')
-                            ->label('SSH Host'),
+                            ->label('SSH Host')
+                            ->icon('heroicon-o-document-duplicate')
+                            ->iconPosition(IconPosition::After)
+                            ->copyable()
+                            ->copyMessage('Copied!')
+                            ->copyMessageDuration(1500),
                         Infolists\Components\TextEntry::make('username')
-                            ->label('SSH Username'),
+                            ->label('SSH Username')
+                            ->copyable()
+                            ->icon('heroicon-o-document-duplicate')
+                            ->iconPosition(IconPosition::After)
+                            ->copyMessage('Copied!')
+                            ->copyMessageDuration(1500),
                         Infolists\Components\TextEntry::make('password')
                             ->label('SSH Password')
                             ->copyable()
+                            ->icon('heroicon-o-document-duplicate')
+                            ->iconPosition(IconPosition::After)
                             ->copyMessage('Copied!')
                             ->copyMessageDuration(1500),
                         Infolists\Components\TextEntry::make('port')
                             ->label('SSH Port')
-                            ->badge(),
+                            ->icon('heroicon-o-document-duplicate')
+                            ->iconPosition(IconPosition::After)
+                            ->badge()
+                            ->copyable()
+                            ->copyMessage('Copied!')
+                            ->copyMessageDuration(1500),
                     ]),
             ]);
     }
