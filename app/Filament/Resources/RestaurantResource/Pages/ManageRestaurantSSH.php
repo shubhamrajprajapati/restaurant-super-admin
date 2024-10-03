@@ -3,15 +3,19 @@
 namespace App\Filament\Resources\RestaurantResource\Pages;
 
 use App\Filament\Resources\RestaurantResource;
-use Filament\Actions;
+use App\Services\SSHService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Support\Enums\IconPosition;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Livewire\Component;
 
 class ManageRestaurantSSH extends ManageRelatedRecords
 {
@@ -21,11 +25,11 @@ class ManageRestaurantSSH extends ManageRelatedRecords
 
     protected static ?string $navigationIcon = 'heroicon-o-command-line';
 
-    protected static ?string $title = "Manage Restaurant SSH";
+    protected static ?string $title = 'Manage Restaurant SSH';
 
     protected static ?string $navigationLabel = 'SSH Details';
 
-    public static function getNavigationBadge(): string|null
+    public static function getNavigationBadge(): ?string
     {
         // Extensions to check
         // $extensionsToCheck = [
@@ -33,7 +37,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
         //     "Mbstring", "OpenSSL", "PCRE", "PDO", "Tokenizer", "XML"
         // ];
         // preg_match("#^\d.\d#", PHP_VERSION, $match);
-        // echo $match[0]; 
+        // echo $match[0];
         // $systemCheck = json_decode(shell_exec('C:\Users\hp\shubham.bat'));
         // Check if each extension is installed
         // foreach ($extensionsToCheck as $ext) {
@@ -57,6 +61,12 @@ class ManageRestaurantSSH extends ManageRelatedRecords
         return $count > 0 ? (string) $count : null;
     }
 
+    // Define the hidden check function
+    public function hiddenCheck($livewire)
+    {
+        return in_array($livewire::class, [SystemCheck::class], true);
+    }
+
     public function form(Form $form): Form
     {
         return $form
@@ -67,7 +77,8 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->boolean()
                     ->inline()
                     ->grouped()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->hidden(false),
                 Forms\Components\TextInput::make('name')
                     ->label('SSH Name')
                     ->prefixIcon('heroicon-o-folder-open')
@@ -126,6 +137,8 @@ class ManageRestaurantSSH extends ManageRelatedRecords
     {
         return $table
             ->recordTitleAttribute('name')
+            ->emptyStateHeading('No SSH Details Found')
+            ->emptyStateDescription('To get started, create the first restaurant SSH detail.')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Name')
@@ -145,10 +158,12 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->iconPosition(IconPosition::After)
                     ->copyable()
                     ->copyMessage('Copied!')
-                    ->copyMessageDuration(1500),
+                    ->copyMessageDuration(1500)
+                    ->hiddenOn([SystemCheck::class]),
                 Tables\Columns\TextColumn::make('private_key')
                     ->label('Private Key')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hiddenOn([SystemCheck::class]),
                 Tables\Columns\TextColumn::make('default_cmd')
                     ->label('Default Command')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -156,14 +171,11 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->label('Port')
                     ->sortable()
                     ->badge()
-                    ->numeric(),
-                Tables\Columns\ToggleColumn::make('active')
-                    ->label('Active')
-                    ->onIcon('heroicon-o-eye')
-                    ->onColor('success')
-                    ->offIcon('heroicon-o-eye-slash')
-                    ->offColor('danger'),
+                    ->numeric()
+                    ->hiddenOn([SystemCheck::class]),
                 Tables\Columns\IconColumn::make('active')
+                    ->label('Default'),
+                Tables\Columns\IconColumn::make('is_valid')
                     ->label('Is Valid'),
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By')
@@ -186,10 +198,13 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
+                    ->modalHeading('Create New Restaurant SSH Details')
+                    ->label('New Restaurant SSH Details')
+                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire))
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['updated_by_user_id'] = auth()->id();
                         $data['created_by_user_id'] = auth()->id();
@@ -198,26 +213,93 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('make_default')
+                    ->label('Make Default')
+                    ->requiresConfirmation()
+                    ->visible(fn (Model $record) => ! $record->is_valid || ! $record->active)
+                    ->sendSuccessNotification()
+                    ->sendFailureNotification()
+                    ->modalHeading(function (Model $record) {
+                        return "Set '$record->host' as Default";
+                    })
+                    ->modalDescription(function (Model $record) {
+                        return "If the provided credentials are correct, this will set '$record->host' as the default. All other SSH configurations for this restaurant will be reverted to non-default status.";
+                    })
+                    ->action(function (Action $action) {
+                        try {
+                            $sshConnected = new SSHService($action->getRecord());
+                            if (! $sshConnected?->isConnected()) {
+                                dd('Error: SSH connection not established.');
+                            }
+
+                            $action->getRecord()->restaurant->ssh()->where('id', '!=', $action->getRecord()->id)->each(
+                                fn (Model $ssh) => $ssh->update([
+                                    'active' => false,
+                                ])
+                            );
+
+                            $action->getRecord()->update([
+                                'active' => true,
+                                'is_valid' => true,
+                                'updated_by_user_id' => auth()->id(),
+                            ]);
+
+                            Notification::make()
+                                ->success()
+                                ->color('success')
+                                ->title(__('SSH Authentication Successful!'))
+                                ->body(__('Congrats! SSH connected successfully and set as default.'))
+                                ->send();
+
+                            if ($action->getLivewire() instanceof SystemCheck) {
+                                $action->getLivewire()->dispatch('sshUpdated');
+                            }
+
+                            return $action->getRecord();
+                        } catch (\Exception $e) {
+                            $action->getRecord()->update([
+                                'active' => false,
+                                'is_valid' => false,
+                            ]);
+                            Notification::make()
+                                ->danger()
+                                ->color('danger')
+                                ->title(__('Can\'t Set as Default: SSH Authentication Failed!'))
+                                ->body($e->getMessage() ?: 'An unexpected error occurred.')
+                                ->send();
+                            $action->cancel();
+                        }
+                    }),
+                Tables\Actions\ViewAction::make()
+                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
                 Tables\Actions\EditAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['updated_by_user_id'] = auth()->id();
 
                         return $data;
-                    }),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
+                    })
+                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                Tables\Actions\RestoreAction::make()
+                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    Tables\Actions\RestoreBulkAction::make()
+                        ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
                 ]),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]));
+            ->modifyQueryUsing(
+                fn (Builder $query) => $query->withoutGlobalScopes([
+                    SoftDeletingScope::class,
+                ])
+            );
     }
 }

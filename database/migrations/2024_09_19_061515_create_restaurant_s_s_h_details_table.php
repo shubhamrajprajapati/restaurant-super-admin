@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('private_key')->nullable(); // For private key authentication
             $table->integer('port')->default(22); // Default SSH port
             $table->boolean('active')->default(false); // To activate/deactivate SSH details
-            
+
             $table->string('name')->default('public');
             $table->string('default_cmd')->nullable();
             $table->string('is_valid')->default(false);

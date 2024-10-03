@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\RestaurantResource\Pages;
 
 use App\Filament\Resources\RestaurantResource;
-use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\ManageRelatedRecords;
@@ -21,11 +20,11 @@ class ManageRestaurantFTP extends ManageRelatedRecords
 
     protected static ?string $navigationIcon = 'heroicon-o-server-stack';
 
-    protected static ?string $title = "Manage Restaurant FTP";
+    protected static ?string $title = 'Manage Restaurant FTP';
 
     protected static ?string $navigationLabel = 'FTP Details';
 
-    public static function getNavigationBadge(): string|null
+    public static function getNavigationBadge(): ?string
     {
         // Get the ID of the currently open record
         $currentId = request()->route('record');
@@ -139,7 +138,7 @@ class ManageRestaurantFTP extends ManageRelatedRecords
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()->mutateFormDataUsing(function (array $data): array {

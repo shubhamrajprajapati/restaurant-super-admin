@@ -7,7 +7,11 @@ result="{"
 append_to_result() {
     key="$1"
     value="$2"
-    result="$result\"$key\":\"$value\","
+    # Check if result already has content to avoid leading commas
+    if [ "${result}" != "{" ]; then
+        result="$result,"
+    fi
+    result="$result\"$key\":\"$value\""
 }
 
 # Check Apache version
@@ -28,16 +32,19 @@ if [ $? -eq 0 ]; then
     append_to_result "mysql_version" "$mysql_version"
 fi
 
-# Check Composer version
-composer_version=$(composer --version 2>&1 | grep -oP 'Composer \K\d+\.\d+\.\d+')
-if [ $? -eq 0 ]; then
-    append_to_result "composer_version" "$composer_version"
+# Check if running as root using id -u
+if [ "$(id -u)" -eq 0 ]; then
+    composer_output=$(COMPOSER_ALLOW_SUPERUSER=1 composer --version --no-interaction 2>&1)
+else
+    composer_output=$(composer --version --no-interaction 2>&1)
 fi
 
-# Check PHP version
-php_version=$(php -v 2>&1 | grep -oP 'PHP \K\d+\.\d+\.\d+')
+# Generalized regex to capture the version number
+composer_version=$(echo "$composer_output" | grep -oP 'Composer (version )?\K[0-9]+\.[0-9]+\.[0-9]+')
 if [ $? -eq 0 ]; then
-    append_to_result "php_version" "$php_version"
+    append_to_result "composer_version" "$composer_version"
+else
+    append_to_result "composer_version" "not found"
 fi
 
 # Check Git version
@@ -46,28 +53,27 @@ if [ $? -eq 0 ]; then
     append_to_result "git_version" "$git_version"
 fi
 
+# Check PHP version
+php_version=$(php -v 2>&1 | grep -oP 'PHP \K\d+\.\d+\.\d+')
+if [ $? -eq 0 ]; then
+    append_to_result "php_version" "$php_version"
+fi
+
 # Check PHP modules
 modules_array=""
 php_modules=$(php -m | tail -n +2) # Skip the first line
 for line in $php_modules; do
     if [ -n "$line" ]; then
-        modules_array="$modules_array\"$line\","
+        if [ -n "$modules_array" ]; then
+            modules_array="$modules_array,"
+        fi
+        modules_array="$modules_array\"$line\""
     fi
 done
 
-# Remove trailing comma from modules_array if necessary
-if [ -n "$modules_array" ]; then
-    modules_array="${modules_array%,}" # Remove the last comma
-fi
-
 # Add modules to result if any
 if [ -n "$modules_array" ]; then
-    result="$result\"modules\":[${modules_array}],"
-fi
-
-# Remove trailing comma if necessary
-if [ -n "$result" ] && [ "${result##*,}" = "," ]; then
-    result="${result%,}" # Remove the last comma
+    result="$result,\"modules\":[${modules_array}]"
 fi
 
 # Close the JSON object

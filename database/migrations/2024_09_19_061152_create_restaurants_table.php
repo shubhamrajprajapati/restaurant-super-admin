@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('restaurants', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->string('name');
             $table->mediumText('description');
             $table->string('domain')->unique();
@@ -25,7 +24,7 @@ return new class extends Migration
             $table->boolean('featured')->default(false);
             $table->boolean('visible')->default(false);
             $table->boolean('verified')->default(false);
-            
+
             $table->boolean('status')->default(false);
             $table->string('status_msg')->nullable();
             $table->boolean('online_order_status')->default(false);

@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 
 class Restaurant extends Model implements Sortable
 {
-    use HasFactory, SoftDeletes, HasUuids, SortableTrait;
+    use HasFactory, HasUuids, SoftDeletes, SortableTrait;
 
     protected $fillable = [
         'name',
@@ -60,19 +59,19 @@ class Restaurant extends Model implements Sortable
         'other_details' => 'array',
     ];
 
-    public function ftp(): HasOne
+    public function ftp(): HasMany
     {
-        return $this->hasOne(related: RestaurantFTPDetails::class);
+        return $this->hasMany(related: RestaurantFTPDetails::class);
     }
 
-    public function ssh(): HasOne
+    public function ssh(): HasMany
     {
-        return $this->hasOne(related: RestaurantSSHDetails::class);
+        return $this->hasMany(related: RestaurantSSHDetails::class);
     }
 
-    public function db(): HasOne
+    public function db(): HasMany
     {
-        return $this->hasOne(related: RestaurantDatatbaseDetails::class);
+        return $this->hasMany(related: RestaurantDatatbaseDetails::class);
     }
 
     public function creator(): BelongsTo

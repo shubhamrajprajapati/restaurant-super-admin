@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RestaurantSSHDetailsResource\Pages;
-use App\Filament\Resources\RestaurantSSHDetailsResource\RelationManagers;
 use App\Models\RestaurantSSHDetails;
 use Filament\Forms;
 use Filament\Forms\Form;

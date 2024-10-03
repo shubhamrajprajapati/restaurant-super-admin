@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RestaurantFTPDetailsResource\Pages;
-use App\Filament\Resources\RestaurantFTPDetailsResource\RelationManagers;
 use App\Models\RestaurantFTPDetails;
 use Filament\Forms;
 use Filament\Forms\Form;

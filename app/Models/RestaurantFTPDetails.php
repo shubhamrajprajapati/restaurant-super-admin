@@ -12,7 +12,7 @@ use Spatie\EloquentSortable\SortableTrait;
 
 class RestaurantFTPDetails extends Model implements Sortable
 {
-    use HasFactory, SoftDeletes, HasUuids, SortableTrait;
+    use HasFactory, HasUuids, SoftDeletes, SortableTrait;
 
     protected $fillable = [
         'restaurant_id',

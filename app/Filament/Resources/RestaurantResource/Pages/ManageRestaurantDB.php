@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\RestaurantResource\Pages;
 
 use App\Filament\Resources\RestaurantResource;
-use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\ManageRelatedRecords;
@@ -20,11 +19,11 @@ class ManageRestaurantDB extends ManageRelatedRecords
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
-    protected static ?string $title = "Manage Restaurant Database";
+    protected static ?string $title = 'Manage Restaurant Database';
 
     protected static ?string $navigationLabel = 'Database Details';
 
-    public static function getNavigationBadge(): string|null
+    public static function getNavigationBadge(): ?string
     {
         // Get the ID of the currently open record
         $currentId = request()->route('record');
@@ -54,7 +53,7 @@ class ManageRestaurantDB extends ManageRelatedRecords
                 Tables\Columns\TextColumn::make('host'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make(),

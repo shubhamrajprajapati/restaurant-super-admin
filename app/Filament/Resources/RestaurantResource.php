@@ -3,16 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RestaurantResource\Pages;
-use Filament\Resources\Pages\Page;
 use App\Models\Restaurant;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Pages\SubNavigationPosition;
-use Filament\Resources\Pages\ContentTabPosition;
-use Filament\Resources\RelationManagers\RelationGroup;
+use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -39,7 +36,7 @@ class RestaurantResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return static::$model::count() . static::$navigationBadgeTooltip;
+        return static::$model::count().static::$navigationBadgeTooltip;
     }
 
     public static function form(Form $form): Form
@@ -147,7 +144,7 @@ class RestaurantResource extends Resource
                             ->content(fn (Model $record): string => $record?->creator?->name),
                         Forms\Components\Placeholder::make('Created At')
                             ->content(fn (Model $record): string => $record?->created_at?->toFormattedDateString()),
-                    ])
+                    ]),
 
             ]);
     }
@@ -237,9 +234,10 @@ class RestaurantResource extends Resource
             'index' => Pages\ListRestaurants::route('/'),
             'create' => Pages\CreateRestaurant::route('/create'),
             'edit' => Pages\EditRestaurant::route('/{record}/edit'),
-            'ssh' => Pages\ManageRestaurantFTP::route('/{record}/ssh'),
+            'ssh' => Pages\ManageRestaurantSSH::route('/{record}/ssh'),
             'db' => Pages\ManageRestaurantDB::route('/{record}/db'),
-            'ftp' => Pages\ManageRestaurantSSH::route('/{record}/ftp'),
+            'ftp' => Pages\ManageRestaurantFTP::route('/{record}/ftp'),
+            'system-check' => Pages\SystemCheck::route('/{record}/system-check'),
         ];
     }
 
@@ -257,7 +255,8 @@ class RestaurantResource extends Resource
             Pages\EditRestaurant::class,
             Pages\ManageRestaurantDB::class,
             Pages\ManageRestaurantSSH::class,
-            Pages\ManageRestaurantFTP::class,
+            // Pages\ManageRestaurantFTP::class,
+            Pages\SystemCheck::class,
         ]);
     }
 }

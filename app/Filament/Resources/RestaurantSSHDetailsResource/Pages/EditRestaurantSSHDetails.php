@@ -18,4 +18,11 @@ class EditRestaurantSSHDetails extends EditRecord
             Actions\RestoreAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['updated_by_user_id'] = auth()->id();
+
+        return $data;
+    }
 }

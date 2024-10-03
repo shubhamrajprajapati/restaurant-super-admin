@@ -11,7 +11,7 @@ use Spatie\EloquentSortable\SortableTrait;
 
 class RestaurantDatatbaseDetails extends Model
 {
-    use HasFactory, SoftDeletes, HasUuids, SortableTrait;
+    use HasFactory, HasUuids, SoftDeletes, SortableTrait;
 
     protected $fillable = [
         'restaurant_id',
@@ -29,7 +29,7 @@ class RestaurantDatatbaseDetails extends Model
         'is_valid',
 
         'order_column',
-        
+
         'updated_by_user_id',
         'created_by_user_id',
     ];

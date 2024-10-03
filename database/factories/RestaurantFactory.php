@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 class RestaurantFactory extends Factory
 {
     protected $model = Restaurant::class;
+
     /**
      * Define the model's default state.
      *
@@ -24,7 +25,7 @@ class RestaurantFactory extends Factory
             'id' => Str::uuid(), // Generate a UUID
             'name' => $this->faker->company, // Random company name
             'description' => $this->faker->paragraph, // Random paragraph
-            'domain' => 'https://' . $this->faker->unique()->domainName, // Full domain URL
+            'domain' => 'https://'.$this->faker->unique()->domainName, // Full domain URL
             'logo' => $this->faker->imageUrl(), // Random image URL
             'installation_token' => Str::random(40), // Random installation token
             'featured' => $this->faker->boolean,

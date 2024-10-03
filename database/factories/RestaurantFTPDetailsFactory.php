@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 class RestaurantFTPDetailsFactory extends Factory
 {
     protected $model = RestaurantFTPDetails::class;
+
     /**
      * Define the model's default state.
      *

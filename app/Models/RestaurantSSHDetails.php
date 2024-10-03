@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUniqueIds;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +12,7 @@ use Spatie\EloquentSortable\SortableTrait;
 
 class RestaurantSSHDetails extends Model implements Sortable
 {
-    use HasFactory, SoftDeletes, HasUuids, SortableTrait;
+    use HasFactory, HasUuids, SoftDeletes, SortableTrait;
 
     protected $fillable = [
         'restaurant_id',

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\SSHService;
 use Illuminate\Http\Request;
-use phpseclib3\Net\SSH2;
 
 class SSHController extends Controller
 {
@@ -21,13 +20,11 @@ class SSHController extends Controller
     /**
      * Check SSH connectivity and execute a command.
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     /**
      * Handle the SSH form submission.
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function checkSSH(Request $request)
@@ -51,7 +48,7 @@ class SSHController extends Controller
 
             return back()->with('result', $output);
         } catch (\Exception $e) {
-            return back()->with('result', 'Error: ' . $e->getMessage());
+            return back()->with('result', 'Error: '.$e->getMessage());
         }
     }
 
@@ -59,10 +56,10 @@ class SSHController extends Controller
     {
         $command = $request->input('command');
         $sshService = new SSHService(
-            "restaurant-child.jollylifestyle.com",
-            "22",
-            "jollylifestyle-restaurant-child",
-            "Shubham@123",
+            'restaurant-child.jollylifestyle.com',
+            '22',
+            'jollylifestyle-restaurant-child',
+            'Shubham@123',
         );
 
         if (ob_get_level()) {

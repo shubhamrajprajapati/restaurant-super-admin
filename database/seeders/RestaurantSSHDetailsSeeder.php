@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\RestaurantSSHDetails;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class RestaurantSSHDetailsSeeder extends Seeder
