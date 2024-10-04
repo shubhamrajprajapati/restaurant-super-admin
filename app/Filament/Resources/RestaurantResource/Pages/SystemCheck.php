@@ -17,6 +17,8 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Filament\Support\Enums\IconPosition;
+use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -34,6 +36,8 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     protected static string $view = 'filament.resources.restaurant-resource.pages.system-check-page';
 
+    public ?array $data = [];
+
     public int $sshCount = 0;
 
     public RestaurantSSHDetails $defaultSSH;
@@ -49,6 +53,24 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         $this->getDefaultSSH();
     }
 
+    private function connectSSH()
+    {
+        return new SSHService($this->defaultSSH);
+    }
+
+    private function execSimpleSSH($command)
+    {
+        try {
+            $sshConnected = $this->connectSSH();
+            if (!$sshConnected->isConnected()) {
+                return 'Error: SSH connection not established.';
+            }
+            return $sshConnected->executeSimpleCommand($command);
+        } catch (\Exception $e) {
+            return 'Error: SSH execuation failed.' . $e->getMessage();
+        }
+    }
+
     public function getDefaultSSH()
     {
         $this->defaultSSH = $this->record->ssh()
@@ -57,23 +79,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             ->first() ?? new RestaurantSSHDetails;
 
         if ($this->defaultSSH?->id) {
-            // Notification::make()->success()->title('SSH Can be loaded now.
-            // ')->send();
-
-            try {
-                $sshConnected = new SSHService($this->defaultSSH);
-
-                if (!$sshConnected->isConnected()) {
-                    return 'Error: SSH connection not established.';
-                }
-
-                $command = file_get_contents(base_path('installation/system-check-inline.sh'));
-
-                $this->serverInfo = json_decode($sshConnected->executeSimpleCommand($command), true);
-                $this->arrangeDefaultSSH();
-            } catch (\Exception $e) {
-                return 'Error: ' . $e->getMessage();
-            }
+            $command = file_get_contents(base_path('installation/system-check-inline.sh'));
+            $output = $this->execSimpleSSH($command);
+            $this->serverInfo = json_decode($output, true);
+            $this->arrangeDefaultSSH();
         }
     }
 
@@ -110,9 +119,42 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     public function form(Form $form): Form
     {
-        return $form->schema([
-            // Forms\Components\TextInput::make('name'),
-        ]);
+        return $form
+            ->schema([
+                Forms\Components\Section::make()
+                    ->statePath('data')
+                    ->heading('Run commands')
+                    ->description('Now, you can run commands directly on this remote server.')
+                    ->icon('heroicon-o-command-line')
+                    ->collapsible()
+                    ->collapsed()
+                    ->compact()
+                    ->headerActions([
+                        Forms\Components\Actions\Action::make('Run command')
+                            ->requiresConfirmation()
+                            ->modalHeading('Confirmation Required')
+                            ->modalDescription('Please confirm before executing any commands on the remote server. Improper use may result in data loss if you are not fully aware of the commands you intend to run.')
+                            ->color('danger')
+                            ->icon('heroicon-o-bolt')
+                            ->extraAttributes(['type' => 'submit'])
+                            ->action(function () {
+                                $data = (object) $this->form->getState()['data'];
+                                $output = $this->execSimpleSSH($data->command);
+                                Notification::make()
+                                    ->title("Command Executed Successfully: '$data->command'")
+                                    ->body($output)
+                                    ->success()
+                                    ->icon('heroicon-o-command-line')
+                                    ->send();
+                            })
+
+                    ])
+                    ->schema([
+                        Forms\Components\TextInput::make('command')
+                            ->hiddenLabel()
+                            ->placeholder('Enter command like- ls, cd www, etc'),
+                    ])
+            ]);
     }
 
     public function table(Table $table): Table
@@ -191,7 +233,29 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->default('not set')
                             ->copyable()
                             ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500),
+                            ->copyMessageDuration(1500)
+                            ->suffixAction(
+                                Action::make('Run Default Cmd')
+                                    ->icon('heroicon-o-bolt')
+                                    ->color('danger')
+                                    ->label('Run Default Command')
+                                    ->requiresConfirmation()
+                                    ->modalHeading('Execute Default Command')
+                                    ->modalDescription('Are you ready to proceed with the default command? Ensure that you understand the implications before continuing.')
+                                    ->modalSubmitActionLabel('Yes, excute')
+                                    ->action(function (Action $action) {
+                                        $command = $action->getRecord()->default_cmd;
+                                        $cmdOutput = $this->execSimpleSSH($command);
+                                        Notification::make()
+                                            ->title("Command Executed Successfully: '$command'")
+                                            ->success()
+                                            ->icon('heroicon-o-command-line')
+                                            ->body($cmdOutput)
+                                            ->send();
+                                    })
+                            )
+                            ->hintIcon('heroicon-o-information-circle')
+                            ->hintIconTooltip('Click on the below icon to run default command on this remote server.'),
                         Infolists\Components\TextEntry::make('host')
                             ->label('SSH Host')
                             ->icon('heroicon-o-document-duplicate')
@@ -241,7 +305,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                         Infolists\Components\Actions\Action::make('install')
                             ->label('Install Restaurant App')
                             ->requiresConfirmation()
-                            ->icon('heroicon-o-folder-arrow-down'),
+                            ->icon('heroicon-o-folder-arrow-down')
+                            ->action(function () {
+                                return true;
+                            }),
                     ])
                     ->schema([
                         Infolists\Components\Section::make('Apache')
@@ -400,5 +467,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->badge(),
                     ]),
             ]);
+    }
+
+    public function runManualSSHCommandFormSubmit()
+    {
+        // headerActions will handle execuation
     }
 }

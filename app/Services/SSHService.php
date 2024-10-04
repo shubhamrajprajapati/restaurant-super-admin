@@ -21,15 +21,15 @@ class SSHService
     {
         $this->ssh = new SSH2($ssh_server, $ssh_port);
 
-        if (! $this->ssh->login($ssh_username, $ssh_password)) {
-            throw new \Exception('SSH authentication failed!');
+        try {
+            return $this->ssh->login($ssh_username, $ssh_password);
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
         }
     }
 
     public function executeSimpleCommand($command)
     {
-        // $batchContent = file_get_contents(base_path('installation/system-check-inline.sh'));
-        // return $batchContent;
         return $this->ssh->exec($command);
     }
 
@@ -37,7 +37,7 @@ class SSHService
     {
         $this->ssh->enablePTY();
 
-        $this->ssh->write($command."\n", SSH2::CHANNEL_SHELL);
+        $this->ssh->write($command . "\n", SSH2::CHANNEL_SHELL);
 
         $output = $this->ssh->read('/username@username:~\$/', SSH2::READ_REGEX, SSH2::CHANNEL_SHELL);
 
