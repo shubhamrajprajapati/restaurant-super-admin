@@ -27,8 +27,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
-use phpseclib3\Net\SSH2;
+use Livewire\Attributes\On;
 
 
 class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
@@ -48,8 +47,6 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
     public RestaurantSSHDetails $defaultSSH;
 
     public array $serverInfo = []; // Declare as an object type, nullable
-
-    protected $listeners = ['sshUpdated' => 'getDefaultSSH'];
 
     public function mount(int|string $record)
     {
@@ -108,6 +105,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             ->send();
     }
 
+    #[On('sshUpdated')]
     public function getDefaultSSH()
     {
         $this->defaultSSH = $this->record->ssh()
@@ -156,21 +154,6 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         }
     }
 
-    // Realtime testing output feature - can be removed
-    public function runCommand($command)
-    {
-        // Establish SSH connection
-        $ssh = new SSH2("restaurant-child.jollylifestyle.com", '22');
-        if (!$ssh->login('jollylifestyle-restaurant-child', 'Shubham@123')) {
-            return "Falied";
-        }
-
-        // Execute the command with a callback for real-time output
-        $ssh->exec($command, function ($output) {
-            Notification::make()->title($output)->send();
-        });
-    }
-
     public function form(Form $form): Form
     {
         return $form
@@ -193,8 +176,6 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->extraAttributes(['type' => 'submit'])
                             ->action(function (): void {
                                 $data = (object) $this->form->getState()['data'];
-                                // $this->runCommand($data->command);
-                                // return;
                                 $response = $this->execSimpleSSH($data->command);
 
                                 if ($response->status) {
@@ -213,6 +194,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->hintIcon('heroicon-o-command-line')
                             ->hintColor('danger')
                             ->extraAttributes(['class' => 'overflow-x-auto'])
+                            ->visible(isset($this->serverInfo['custom_cmd_output']))
                             ->content(
                                 new HtmlString("<div class=\"overflow-x-auto\"><pre>" . ($this->serverInfo['custom_cmd_output'] ?? '') . "</pre></div>")
                             )
@@ -589,7 +571,6 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         if ($response->status) {
             $response->icon = 'heroicon-o-command-line';
             $this->sendNotification($response);
-
         }
 
         $this->serverInfo['directories'] = $response->plain_body;

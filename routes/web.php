@@ -33,3 +33,30 @@ Route::post('/ssh/execute', [SSHController::class, 'executeSimpleCommand']);
 Route::get('/super-admin/settings/{childRestaurant}', [SuperAdminController::class, 'manageSettings']);
 Route::post('/super-admin/settings/{childRestaurant}', [SuperAdminController::class, 'overrideSettings']);
 Route::post('/super-admin/install', [SuperAdminController::class, 'installChildRestaurant']);
+
+
+Route::get('/stream', function(){
+    header("Content-Type: text/event-stream");
+    header("Cache-Control: no-cache");
+    header("Connection: keep-alive");
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
+    header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+    ob_end_flush();
+
+    while (true) {
+        echo "event: message\n";
+        echo "data: sdsdhdhsgsf\n";
+
+        if (connection_aborted()) {
+            break;
+        }
+
+        sleep(1);
+    }
+
+    echo "event: stop\n";
+    echo "data: stopped\n\n";
+});

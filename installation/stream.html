@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE Event</title>
+</head>
+<body>
+    <div id="results"></div>
+    <script>
+        const eventSource = new EventSource("events.php");
+        // eventSource.onmessage(function (event) {
+            // document.querySelector("#result").innerHTML += event.data;
+        // });
+
+        eventSource.addEventListener('message', function(event){
+            document.querySelector("#results").innerHTML += event.data;
+        });
+    </script>
+</body>
+</html>
