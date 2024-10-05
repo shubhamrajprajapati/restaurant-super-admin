@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Livewire\Component;
+use Illuminate\Support\HtmlString;
 
 class ManageRestaurantSSH extends ManageRelatedRecords
 {
@@ -87,11 +88,23 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->placeholder('e.g., public, public_html, etc')
                     ->required(),
                 Forms\Components\Textarea::make('default_cmd')
-                    ->label('SSH Default Command')
-                    ->helperText('This command will execute first when these credentials are used for connection.')
+                    ->label('Custom SSH Command')
+                    ->helperText(
+                        new HtmlString('
+                        <p class="text-xs leading-3">
+                        Enter the command to navigate to the installation directory. For example:<br>
+                            <code class="font-semibold">cd htdocs && cd public</code><br>
+                            <code class="font-semibold">cd www</code><br>
+                            This command will be executed before the installation process.
+                        </p>
+                        ')
+                    )
+                    ->hint('Learn more')
+                    ->hintIcon('heroicon-o-question-mark-circle')
+                    ->hintIconTooltip('Enter the command to navigate to the installation directory. For example: cd htdocs && cd public, cd www. This command will be executed before the installation process. You can modify it multiple times if needed.')
                     ->maxLength(255)
                     ->nullable()
-                    ->placeholder('e.g., cd www && ls -la')
+                    ->placeholder('e.g., cd htdocs && cd public, cd www')
                     ->autosize(),
                 Forms\Components\TextInput::make('host')
                     ->label('SSH Host')
@@ -165,7 +178,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hiddenOn([SystemCheck::class]),
                 Tables\Columns\TextColumn::make('default_cmd')
-                    ->label('Default Command')
+                    ->label('Custom SSH Command')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('port')
                     ->label('Port')
@@ -216,7 +229,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                 Tables\Actions\Action::make('make_default')
                     ->label('Make Default')
                     ->requiresConfirmation()
-                    ->visible(fn (Model $record) => ! $record->is_valid || ! $record->active)
+                    ->visible(fn (Model $record) => !$record->is_valid || !$record->active)
                     ->sendSuccessNotification()
                     ->sendFailureNotification()
                     ->modalHeading(function (Model $record) {
@@ -228,7 +241,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->action(function (Action $action) {
                         try {
                             $sshConnected = new SSHService($action->getRecord());
-                            if (! $sshConnected?->isConnected()) {
+                            if (!$sshConnected?->isConnected()) {
                                 dd('Error: SSH connection not established.');
                             }
 

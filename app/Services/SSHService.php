@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RestaurantSSHDetails;
+use Filament\Notifications\Notification;
 use phpseclib3\File\ANSI;
 use phpseclib3\Net\SSH2;
 
@@ -19,18 +20,21 @@ class SSHService
 
     public function connectManually($ssh_server, $ssh_port, $ssh_username, $ssh_password)
     {
-        $this->ssh = new SSH2($ssh_server, $ssh_port);
-
         try {
+            $this->ssh = new SSH2($ssh_server, $ssh_port);
             return $this->ssh->login($ssh_username, $ssh_password);
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
         }
     }
 
-    public function executeSimpleCommand($command)
+    public function executeSimpleCommand($command, $realtime = false)
     {
-        return $this->ssh->exec($command);
+        if (!$realtime) {
+            return $this->ssh->exec($command);
+        } else {
+            return $this->ssh->exec($command, fn ($output) => $output);
+        }
     }
 
     public function executeIntractiveCommand($command)

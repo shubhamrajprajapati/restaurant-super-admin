@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     @if ($this->defaultSSH->id)
         {{ $this->defaultSSHInfolist }}
-        {{ $this->infolist }}
+        {{ $this->serverEnvDetailsInfolist }}
         <x-filament-panels::form wire:submit="runManualSSHCommandFormSubmit">
             {{ $this->form }}
         </x-filament-panels::form>

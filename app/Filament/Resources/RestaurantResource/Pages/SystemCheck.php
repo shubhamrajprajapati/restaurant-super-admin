@@ -19,12 +19,17 @@ use Filament\Resources\Pages\Page;
 use Filament\Support\Enums\IconPosition;
 use Filament\Forms;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
+use phpseclib3\Net\SSH2;
+
 
 class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 {
@@ -58,17 +63,49 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         return new SSHService($this->defaultSSH);
     }
 
-    private function execSimpleSSH($command)
+    private function execSimpleSSH($command, $realtime = false)
     {
         try {
             $sshConnected = $this->connectSSH();
+
             if (!$sshConnected->isConnected()) {
-                return 'Error: SSH connection not established.';
+                return (object) [
+                    'status' => false,
+                    'title' => 'Error Occurred!',
+                    'body' => '<div class=\'overflow-x-auto\'><pre>SSH connection not established.</pre><br><div>',
+                    'plain_body' => 'SSH connection not established.',
+                ];
             }
-            return $sshConnected->executeSimpleCommand($command);
+
+            // Execute the command
+            $output = $sshConnected->executeSimpleCommand($command, $realtime);
+
+            return (object) [
+                'status' => true,
+                'title' => "Command Executed Successfully: <strong class='text-primary-600 dark:text-primary-400'>$command<strong>",
+                'body' => "<div class=\"overflow-x-auto\"><pre>{$output}</pre><br></div>",
+                'plain_body' => $output
+            ];
         } catch (\Exception $e) {
-            return 'Error: SSH execuation failed.' . $e->getMessage();
+            $error = (object) [
+                'status' => false,
+                'title' => 'Error: SSH Connection Failed.',
+                'body' => "<div class='overflow-x-auto'><pre>{$e->getMessage()}</pre><br></div>",
+                'plain_body' => $e->getMessage(),
+            ];
+            $this->sendNotification($error);
+            return $error;
         }
+    }
+
+    private function sendNotification(\stdClass $data = null): void
+    {
+        Notification::make()
+            ->title($data?->title)
+            ->body($data?->body)
+            ->status(fn () => $data?->type ?? ($data?->status ? 'success' : 'danger'))
+            ->icon(fn () => isset($data?->icon) ? ($data?->icon ?: null) : null)
+            ->send();
     }
 
     public function getDefaultSSH()
@@ -80,8 +117,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
         if ($this->defaultSSH?->id) {
             $command = file_get_contents(base_path('installation/system-check-inline.sh'));
-            $output = $this->execSimpleSSH($command);
-            $this->serverInfo = json_decode($output, true);
+            $result = $this->execSimpleSSH($command);
+
+            // Check result status
+            $this->serverInfo = $result?->status ? (json_decode($result->plain_body, true) ?? []) : [];
             $this->arrangeDefaultSSH();
         }
     }
@@ -117,6 +156,21 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         }
     }
 
+    // Realtime testing output feature - can be removed
+    public function runCommand($command)
+    {
+        // Establish SSH connection
+        $ssh = new SSH2("restaurant-child.jollylifestyle.com", '22');
+        if (!$ssh->login('jollylifestyle-restaurant-child', 'Shubham@123')) {
+            return "Falied";
+        }
+
+        // Execute the command with a callback for real-time output
+        $ssh->exec($command, function ($output) {
+            Notification::make()->title($output)->send();
+        });
+    }
+
     public function form(Form $form): Form
     {
         return $form
@@ -137,22 +191,31 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->color('danger')
                             ->icon('heroicon-o-bolt')
                             ->extraAttributes(['type' => 'submit'])
-                            ->action(function () {
+                            ->action(function (): void {
                                 $data = (object) $this->form->getState()['data'];
-                                $output = $this->execSimpleSSH($data->command);
-                                Notification::make()
-                                    ->title("Command Executed Successfully: '$data->command'")
-                                    ->body($output)
-                                    ->success()
-                                    ->icon('heroicon-o-command-line')
-                                    ->send();
-                            })
+                                // $this->runCommand($data->command);
+                                // return;
+                                $response = $this->execSimpleSSH($data->command);
 
+                                if ($response->status) {
+                                    $response->icon = 'heroicon-o-command-line';
+                                    $this->sendNotification($response);
+                                }
+                                $this->serverInfo['custom_cmd_output'] = $response->plain_body;
+                            }),
                     ])
                     ->schema([
                         Forms\Components\TextInput::make('command')
                             ->hiddenLabel()
                             ->placeholder('Enter command like- ls, cd www, etc'),
+                        Forms\Components\Placeholder::make('output')
+                            ->hiddenLabel()
+                            ->hintIcon('heroicon-o-command-line')
+                            ->hintColor('danger')
+                            ->extraAttributes(['class' => 'overflow-x-auto'])
+                            ->content(
+                                new HtmlString("<div class=\"overflow-x-auto\"><pre>" . ($this->serverInfo['custom_cmd_output'] ?? '') . "</pre></div>")
+                            )
                     ])
             ]);
     }
@@ -203,7 +266,6 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                 Infolists\Components\Section::make('Default SSH')
                     ->description('Using the default SSH settings to check the system. You can modify these settings in the SSH Details section.')
                     ->icon('heroicon-o-command-line')
-                    ->columns()
                     ->collapsible()
                     ->collapsed()
                     ->compact()
@@ -220,76 +282,100 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             }),
                     ])
                     ->schema([
-                        Infolists\Components\TextEntry::make('name')
-                            ->label('Name Identifier')->copyable()
-                            ->icon('heroicon-o-document-duplicate')
-                            ->iconPosition(IconPosition::After)
-                            ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500),
-                        Infolists\Components\TextEntry::make('default_cmd')
-                            ->label('Default Command')
-                            ->icon('heroicon-o-document-duplicate')
-                            ->iconPosition(IconPosition::After)
-                            ->default('not set')
-                            ->copyable()
-                            ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500)
-                            ->suffixAction(
-                                Action::make('Run Default Cmd')
-                                    ->icon('heroicon-o-bolt')
-                                    ->color('danger')
-                                    ->label('Run Default Command')
-                                    ->requiresConfirmation()
-                                    ->modalHeading('Execute Default Command')
-                                    ->modalDescription('Are you ready to proceed with the default command? Ensure that you understand the implications before continuing.')
-                                    ->modalSubmitActionLabel('Yes, excute')
-                                    ->action(function (Action $action) {
-                                        $command = $action->getRecord()->default_cmd;
-                                        $cmdOutput = $this->execSimpleSSH($command);
-                                        Notification::make()
-                                            ->title("Command Executed Successfully: '$command'")
-                                            ->success()
+                        Infolists\Components\Tabs::make()
+                            ->schema([
+                                Infolists\Components\Tabs\Tab::make('Info')
+                                    ->columns()
+                                    ->icon('heroicon-o-information-circle')
+                                    ->schema([
+                                        Infolists\Components\TextEntry::make('name')
+                                            ->label('Name Identifier')->copyable()
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500),
+                                        Infolists\Components\TextEntry::make('default_cmd')
+                                            ->label('Installation Directory')
+                                            ->helperText('This command will navigate to the installation directory.')
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->default('not set')
+                                            ->copyable()
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500)
+                                            ->suffixAction(
+                                                Action::make('Run Default Cmd')
+                                                    ->icon('heroicon-o-bolt')
+                                                    ->color('danger')
+                                                    ->label('Execute Installation Directory Command')
+                                                    ->requiresConfirmation()
+                                                    ->modalHeading('View Files & Folders in the Installation Directory')
+                                                    ->modalDescription('Are you ready to proceed with the installation directory command? Please ensure you understand the implications before continuing.')
+                                                    ->modalSubmitActionLabel('Yes, Execute')
+                                                    ->action(function (Action $action): void {
+                                                        $command = $action->getRecord()->default_cmd;
+                                                        $this->runInstallationDirectoryCmd($command);
+                                                    })
+                                            )
+                                            ->hint('Learn more')
+                                            ->hintIcon('heroicon-o-information-circle')
+                                            ->hintIconTooltip('This command navigates to the installation directory for your restaurant app. You can modify it if needed or keep it for convenience. Click the icon below to view all files and folders on the remote server. We will append \'&& ls -la\' to your command to display the contents of the directory.'),
+                                        Infolists\Components\TextEntry::make('host')
+                                            ->label('SSH Host')
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->copyable()
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500),
+                                        Infolists\Components\TextEntry::make('username')
+                                            ->label('SSH Username')
+                                            ->copyable()
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500),
+                                        Infolists\Components\TextEntry::make('password')
+                                            ->label('SSH Password')
+                                            ->copyable()
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500),
+                                        Infolists\Components\TextEntry::make('port')
+                                            ->label('SSH Port')
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->badge()
+                                            ->copyable()
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500),
+                                    ]),
+                                Infolists\Components\Tabs\Tab::make('Directory Contents')
+                                    ->icon('heroicon-o-folder')
+                                    ->schema([
+                                        Infolists\Components\TextEntry::make('default_cmd')
+                                            ->html()
+                                            ->inlineLabel()
+                                            ->label('Directories Listed from This Command')
+                                            ->default("ls -la")
+                                            ->prefix(fn () => new HtmlString('<pre>'))
+                                            ->suffix(fn () => new HtmlString('</pre>'))
                                             ->icon('heroicon-o-command-line')
-                                            ->body($cmdOutput)
-                                            ->send();
-                                    })
-                            )
-                            ->hintIcon('heroicon-o-information-circle')
-                            ->hintIconTooltip('Click on the below icon to run default command on this remote server.'),
-                        Infolists\Components\TextEntry::make('host')
-                            ->label('SSH Host')
-                            ->icon('heroicon-o-document-duplicate')
-                            ->iconPosition(IconPosition::After)
-                            ->copyable()
-                            ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500),
-                        Infolists\Components\TextEntry::make('username')
-                            ->label('SSH Username')
-                            ->copyable()
-                            ->icon('heroicon-o-document-duplicate')
-                            ->iconPosition(IconPosition::After)
-                            ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500),
-                        Infolists\Components\TextEntry::make('password')
-                            ->label('SSH Password')
-                            ->copyable()
-                            ->icon('heroicon-o-document-duplicate')
-                            ->iconPosition(IconPosition::After)
-                            ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500),
-                        Infolists\Components\TextEntry::make('port')
-                            ->label('SSH Port')
-                            ->icon('heroicon-o-document-duplicate')
-                            ->iconPosition(IconPosition::After)
-                            ->badge()
-                            ->copyable()
-                            ->copyMessage('Copied!')
-                            ->copyMessageDuration(1500),
-                    ]),
+                                            ->iconColor('warning'),
+                                        Infolists\Components\TextEntry::make('directories')
+                                            ->html()
+                                            ->extraAttributes(['class' => 'overflow-x-auto'])
+                                            ->prefix(fn () => new HtmlString('<pre>'))
+                                            ->suffix(fn () => new HtmlString('</pre><br>'))
+                                            ->default(fn () => $this->serverInfo['custom_cmd_output'] ?? 'Not Found')
+                                    ]),
+                            ])
+                    ])
+
             ]);
     }
 
-    public function infolist(Infolist $infolist): Infolist
+    public function serverEnvDetailsInfolist(Infolist $infolist): Infolist
     {
         return $infolist
             ->state($this->serverInfo)
@@ -302,6 +388,25 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                     ->compact()
                     ->columnSpanFull()
                     ->headerActions([
+                        Infolists\Components\Actions\Action::make('refresh')
+                            ->label('Refresh')
+                            ->color('success')
+                            ->requiresConfirmation()
+                            ->icon('heroicon-o-arrow-path')
+                            ->action(function () {
+                                $this->getDefaultSSH();
+                            }),
+                    ])
+                    ->footerActionsAlignment(Alignment::End)
+                    ->footerActions([
+                        Infolists\Components\Actions\Action::make('update')
+                            ->label('Update App')
+                            ->color('success')
+                            ->requiresConfirmation()
+                            ->icon('heroicon-o-folder-plus')
+                            ->action(function () {
+                                return true;
+                            }),
                         Infolists\Components\Actions\Action::make('install')
                             ->label('Install Restaurant App')
                             ->requiresConfirmation()
@@ -463,6 +568,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ]),
                         Infolists\Components\TextEntry::make('modules')
                             ->label('PHP Modules Found')
+                            ->default('Not Found')
                             ->columnSpanFull()
                             ->badge(),
                     ]),
@@ -472,5 +578,20 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
     public function runManualSSHCommandFormSubmit()
     {
         // headerActions will handle execuation
+    }
+
+    private function runInstallationDirectoryCmd($command, $append = 'ls -la'): void
+    {
+        $command = !empty($command) ? "$command && $append" : $append;
+
+        $response = $this->execSimpleSSH($command);
+
+        if ($response->status) {
+            $response->icon = 'heroicon-o-command-line';
+            $this->sendNotification($response);
+
+        }
+
+        $this->serverInfo['directories'] = $response->plain_body;
     }
 }
