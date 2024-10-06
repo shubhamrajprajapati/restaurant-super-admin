@@ -367,6 +367,18 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                             ->copyable()
                                             ->copyMessage('Copied!')
                                             ->copyMessageDuration(1500),
+                                        Infolists\Components\TextEntry::make('full_command')
+                                            ->color('warning')
+                                            ->label('Connection Command')
+                                            ->hintIcon('heroicon-o-question-mark-circle')
+                                            ->hintIconTooltip('Copy the connection command and paste it into your terminal. After that, copy the password provided above and paste it into the prompt to log in successfully.')
+                                            ->default("ssh {$this->defaultSSH?->username}@{$this->defaultSSH?->host} -p {$this->defaultSSH?->port}")
+                                            ->icon('heroicon-o-document-duplicate')
+                                            ->iconPosition(IconPosition::After)
+                                            ->copyable()
+                                            ->copyMessage('Copied!')
+                                            ->copyMessageDuration(1500)
+                                            ->columnSpanFull(),
                                     ]),
                                 Infolists\Components\Tabs\Tab::make('Directory Contents')
                                     ->icon('heroicon-o-folder')
@@ -622,7 +634,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     private function installApp()
     {
-        $response = $this->runInstallationDirectoryCmd(append: 'rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/cv.git . && ls -la', return: true);
+        $response = $this->runInstallationDirectoryCmd(append: 'rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/cv.git . && ls -la', return :true);
         $this->serverInfo['directories'] = $response->plain_body;
         $this->serverInfo['custom_cmd_output'] = $response->plain_body;
     }
