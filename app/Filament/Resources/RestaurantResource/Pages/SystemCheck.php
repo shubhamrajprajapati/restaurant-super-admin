@@ -6,6 +6,7 @@ use App\Filament\Resources\RestaurantResource;
 use App\Models\RestaurantSSHDetails;
 use App\Services\SSHService;
 use Filament\Actions\EditAction;
+use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -14,12 +15,13 @@ use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
-use Filament\Support\Enums\IconPosition;
-use Filament\Forms;
-use Filament\Notifications\Notification;
 use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -28,7 +30,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\HtmlString;
 use Livewire\Attributes\On;
-
 
 class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 {
@@ -48,11 +49,18 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     public array $serverInfo = []; // Declare as an object type, nullable
 
-    public function mount(int|string $record)
+    public ?string $pwd;
+
+    public function mount(int | string $record)
     {
         $this->record = $this->resolveRecord($record);
         $this->sshCount = $this->record?->ssh?->count();
         $this->getDefaultSSH();
+    }
+
+    private function getInstallationDirCommand()
+    {
+        return $this->defaultSSH?->default_cmd ?? '';
     }
 
     private function connectSSH()
@@ -81,7 +89,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                 'status' => true,
                 'title' => "Command Executed Successfully: <strong class='text-primary-600 dark:text-primary-400'>$command<strong>",
                 'body' => "<div class=\"overflow-x-auto\"><pre>{$output}</pre><br></div>",
-                'plain_body' => $output
+                'plain_body' => $output,
             ];
         } catch (\Exception $e) {
             $error = (object) [
@@ -100,8 +108,8 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         Notification::make()
             ->title($data?->title)
             ->body($data?->body)
-            ->status(fn () => $data?->type ?? ($data?->status ? 'success' : 'danger'))
-            ->icon(fn () => isset($data?->icon) ? ($data?->icon ?: null) : null)
+            ->status(fn() => $data?->type ?? ($data?->status ? 'success' : 'danger'))
+            ->icon(fn() => isset($data?->icon) ? ($data?->icon ?: null): null)
             ->send();
     }
 
@@ -119,7 +127,12 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
             // Check result status
             $this->serverInfo = $result?->status ? (json_decode($result->plain_body, true) ?? []) : [];
-            $this->arrangeDefaultSSH();
+            if (count($this->serverInfo)) {
+                $this->arrangeDefaultSSH();
+                $this->runInstallationDirectoryCmd(showNotification: false);
+                $pwdOutput = $this->runInstallationDirectoryCmd(append: 'pwd', showNotification: false, return :true);
+                $this->pwd = $pwdOutput->plain_body;
+            }
         }
     }
 
@@ -159,9 +172,10 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         return $form
             ->schema([
                 Forms\Components\Section::make()
+                    ->id('remote-server-cmd-run-form')
                     ->statePath('data')
-                    ->heading('Run commands')
-                    ->description('Now, you can run commands directly on this remote server.')
+                    ->heading('Execute Commands')
+                    ->description('You can now run commands directly on this remote server within the installation directory.')
                     ->icon('heroicon-o-command-line')
                     ->collapsible()
                     ->collapsed()
@@ -176,19 +190,34 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->extraAttributes(['type' => 'submit'])
                             ->action(function (): void {
                                 $data = (object) $this->form->getState()['data'];
-                                $response = $this->execSimpleSSH($data->command);
-
-                                if ($response->status) {
-                                    $response->icon = 'heroicon-o-command-line';
-                                    $this->sendNotification($response);
-                                }
-                                $this->serverInfo['custom_cmd_output'] = $response->plain_body;
+                                $this->runSshOnRemoteServer($data->command);
                             }),
                     ])
                     ->schema([
                         Forms\Components\TextInput::make('command')
                             ->hiddenLabel()
-                            ->placeholder('Enter command like- ls, cd www, etc'),
+                            ->placeholder('Enter command like- ls, cd www, etc')
+                            ->required()
+                            ->hint(new HtmlString("<small><code>$this->pwd</code></small>"))
+                            ->hintColor('danger')
+                            ->hintIcon('heroicon-o-question-mark-circle')
+                            ->hintIconTooltip('This is the path where your custom command will be executed.')
+                            ->suffixActions(
+                                [
+                                    Forms\Components\Actions\Action::make('Run command')
+                                        ->requiresConfirmation()
+                                        ->modalHeading('Confirmation Required')
+                                        ->modalDescription('Please confirm before executing any commands on the remote server. Improper use may result in data loss if you are not fully aware of the commands you intend to run.')
+                                        ->color('danger')
+                                        ->icon('heroicon-o-bolt')
+                                        ->extraAttributes(['type' => 'submit'])
+                                        ->action(function (): void {
+                                            $data = (object) $this->form->getState()['data'];
+                                            $this->runSshOnRemoteServer($data->command);
+                                        }),
+                                ]
+                            ),
+
                         Forms\Components\Placeholder::make('output')
                             ->hiddenLabel()
                             ->hintIcon('heroicon-o-command-line')
@@ -197,8 +226,8 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->visible(isset($this->serverInfo['custom_cmd_output']))
                             ->content(
                                 new HtmlString("<div class=\"overflow-x-auto\"><pre>" . ($this->serverInfo['custom_cmd_output'] ?? '') . "</pre></div>")
-                            )
-                    ])
+                            ),
+                    ]),
             ]);
     }
 
@@ -207,7 +236,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         $resSSH = new ManageRestaurantSSH;
 
         return $resSSH->table($table)
-            ->relationship(fn (): HasMany => $this->record->ssh())
+            ->relationship(fn(): HasMany => $this->record->ssh())
             ->inverseRelationship('restaurant')
             ->defaultSort('is_valid', 'desc')
             ->deferLoading()
@@ -225,7 +254,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                     return 'Please create a new SSH configuration.';
                 }
             })
-            ->emptyStateHeading(fn (Table $table) => $table->getHeading())->emptyStateDescription(fn (Table $table) => $table->getDescription())
+            ->emptyStateHeading(fn(Table $table) => $table->getHeading())->emptyStateDescription(fn(Table $table) => $table->getDescription())
             ->emptyStateActions([
                 TableAction::make('create')
                     ->label('Create New')
@@ -253,7 +282,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                     ->compact()
                     ->headerActions([
                         Action::make('edit')
-                            ->label('Change Default SSH')
+                            ->label('Edit')
                             ->icon('heroicon-m-pencil-square')
                             ->url(function (RestaurantSSHDetails $record) {
                                 return ManageRestaurantSSH::getUrl(parameters: [
@@ -261,6 +290,14 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     'tableActionRecord' => $record,
                                     'record' => $this->record,
                                 ]);
+                            }),
+                        Action::make('refresh')
+                            ->label('Refresh')
+                            ->icon('heroicon-m-arrow-path')
+                            ->color('danger')
+                            ->hidden(count($this->serverInfo) > 0)
+                            ->action(function () {
+                                $this->getDefaultSSH();
                             }),
                     ])
                     ->schema([
@@ -294,9 +331,8 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                                     ->modalHeading('View Files & Folders in the Installation Directory')
                                                     ->modalDescription('Are you ready to proceed with the installation directory command? Please ensure you understand the implications before continuing.')
                                                     ->modalSubmitActionLabel('Yes, Execute')
-                                                    ->action(function (Action $action): void {
-                                                        $command = $action->getRecord()->default_cmd;
-                                                        $this->runInstallationDirectoryCmd($command);
+                                                    ->action(function (): void {
+                                                        $this->runInstallationDirectoryCmd();
                                                     })
                                             )
                                             ->hint('Learn more')
@@ -336,23 +372,24 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     ->icon('heroicon-o-folder')
                                     ->schema([
                                         Infolists\Components\TextEntry::make('default_cmd')
-                                            ->html()
-                                            ->inlineLabel()
-                                            ->label('Directories Listed from This Command')
+                                            ->weight(FontWeight::Bold)
+                                            ->fontFamily(FontFamily::Mono)
+                                            ->label('Directories listed from this command')
                                             ->default("ls -la")
-                                            ->prefix(fn () => new HtmlString('<pre>'))
-                                            ->suffix(fn () => new HtmlString('</pre>'))
                                             ->icon('heroicon-o-command-line')
-                                            ->iconColor('warning'),
+                                            ->iconColor('warning')
+                                            ->copyable()
+                                            ->copyMessage('Copied Command!')
+                                            ->copyMessageDuration(1500),
                                         Infolists\Components\TextEntry::make('directories')
                                             ->html()
                                             ->extraAttributes(['class' => 'overflow-x-auto'])
-                                            ->prefix(fn () => new HtmlString('<pre>'))
-                                            ->suffix(fn () => new HtmlString('</pre><br>'))
-                                            ->default(fn () => $this->serverInfo['custom_cmd_output'] ?? 'Not Found')
+                                            ->prefix(fn() => new HtmlString('<pre>'))
+                                            ->suffix(fn() => new HtmlString('</pre><br>'))
+                                            ->default(fn() => $this->serverInfo['directories'] ?? 'Not Found'),
                                     ]),
-                            ])
-                    ])
+                            ]),
+                    ]),
 
             ]);
     }
@@ -378,6 +415,11 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->action(function () {
                                 $this->getDefaultSSH();
                             }),
+                        Infolists\Components\Actions\Action::make('open_website')
+                            ->label('Visit Website')
+                            ->iconButton()
+                            ->icon('heroicon-o-arrow-top-right-on-square')
+                            ->url($this->record->domain, true),
                     ])
                     ->footerActionsAlignment(Alignment::End)
                     ->footerActions([
@@ -386,27 +428,29 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->color('success')
                             ->requiresConfirmation()
                             ->icon('heroicon-o-folder-plus')
-                            ->action(function () {
-                                return true;
+                            ->action(function (): void {
+                                $this->updateApp();
                             }),
                         Infolists\Components\Actions\Action::make('install')
-                            ->label('Install Restaurant App')
                             ->requiresConfirmation()
+                            ->label('Install Restaurant App')
+                            ->modalDescription(new HtmlString('Clicking <b>Install</b> will permanently delete all files and folders from the Installation directory and initiate the installation process. Please ensure you have backed up any important data before proceeding.'))
+                            ->color('danger')
                             ->icon('heroicon-o-folder-arrow-down')
-                            ->action(function () {
-                                return true;
+                            ->action(function (): void {
+                                $this->installApp();
                             }),
                     ])
                     ->schema([
                         Infolists\Components\Section::make('Apache')
-                            ->description(fn () => $this->serverInfo['apache']['description'])
+                            ->description(fn() => $this->serverInfo['apache']['description'])
                             ->columns(2)
-                            ->icon(fn () => $this->serverInfo['apache']['icon'])
-                            ->iconColor(fn () => $this->serverInfo['apache']['color'])
+                            ->icon(fn() => $this->serverInfo['apache']['icon'])
+                            ->iconColor(fn() => $this->serverInfo['apache']['color'])
                             ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
-                            ->extraAttributes(fn () => $this->serverInfo['apache']['extraAttributes'])
+                            ->extraAttributes(fn() => $this->serverInfo['apache']['extraAttributes'])
                             ->schema([
                                 Infolists\Components\ImageEntry::make('apache.logo')
                                     ->square()
@@ -424,14 +468,14 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     ->default('Not Installed'),
                             ]),
                         Infolists\Components\Section::make('Nginx')
-                            ->description(fn () => $this->serverInfo['nginx']['description'])
+                            ->description(fn() => $this->serverInfo['nginx']['description'])
                             ->columns(2)
-                            ->icon(fn () => $this->serverInfo['nginx']['icon'])
-                            ->iconColor(fn () => $this->serverInfo['nginx']['color'])
+                            ->icon(fn() => $this->serverInfo['nginx']['icon'])
+                            ->iconColor(fn() => $this->serverInfo['nginx']['color'])
                             ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
-                            ->extraAttributes(fn () => $this->serverInfo['nginx']['extraAttributes'])
+                            ->extraAttributes(fn() => $this->serverInfo['nginx']['extraAttributes'])
                             ->schema([
                                 Infolists\Components\ImageEntry::make('nginx.logo')
                                     ->square()
@@ -449,14 +493,14 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     ->default('Not Installed'),
                             ]),
                         Infolists\Components\Section::make('Git')
-                            ->description(fn () => $this->serverInfo['git']['description'])
+                            ->description(fn() => $this->serverInfo['git']['description'])
                             ->columns(2)
-                            ->icon(fn () => $this->serverInfo['git']['icon'])
-                            ->iconColor(fn () => $this->serverInfo['git']['color'])
+                            ->icon(fn() => $this->serverInfo['git']['icon'])
+                            ->iconColor(fn() => $this->serverInfo['git']['color'])
                             ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
-                            ->extraAttributes(fn () => $this->serverInfo['git']['extraAttributes'])
+                            ->extraAttributes(fn() => $this->serverInfo['git']['extraAttributes'])
                             ->schema([
                                 Infolists\Components\ImageEntry::make('git.logo')
                                     ->square()
@@ -474,14 +518,14 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     ->default('Not Installed'),
                             ]),
                         Infolists\Components\Section::make('MySQL')
-                            ->description(fn () => $this->serverInfo['mysql']['description'])
+                            ->description(fn() => $this->serverInfo['mysql']['description'])
                             ->columns(2)
-                            ->icon(fn () => $this->serverInfo['mysql']['icon'])
-                            ->iconColor(fn () => $this->serverInfo['mysql']['color'])
+                            ->icon(fn() => $this->serverInfo['mysql']['icon'])
+                            ->iconColor(fn() => $this->serverInfo['mysql']['color'])
                             ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
-                            ->extraAttributes(fn () => $this->serverInfo['mysql']['extraAttributes'])
+                            ->extraAttributes(fn() => $this->serverInfo['mysql']['extraAttributes'])
                             ->schema([
                                 Infolists\Components\ImageEntry::make('mysql.logo')
                                     ->square()
@@ -499,14 +543,14 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     ->default('Not Installed'),
                             ]),
                         Infolists\Components\Section::make('Composer')
-                            ->description(fn () => $this->serverInfo['composer']['description'])
+                            ->description(fn() => $this->serverInfo['composer']['description'])
                             ->columns(2)
-                            ->icon(fn () => $this->serverInfo['composer']['icon'])
-                            ->iconColor(fn () => $this->serverInfo['composer']['color'])
+                            ->icon(fn() => $this->serverInfo['composer']['icon'])
+                            ->iconColor(fn() => $this->serverInfo['composer']['color'])
                             ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
-                            ->extraAttributes(fn () => $this->serverInfo['composer']['extraAttributes'])
+                            ->extraAttributes(fn() => $this->serverInfo['composer']['extraAttributes'])
                             ->schema([
                                 Infolists\Components\ImageEntry::make('composer.logo')
                                     ->square()
@@ -524,14 +568,14 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                                     ->default('Not Installed'),
                             ]),
                         Infolists\Components\Section::make('PHP')
-                            ->description(fn () => $this->serverInfo['php']['description'])
+                            ->description(fn() => $this->serverInfo['php']['description'])
                             ->columns(2)
-                            ->icon(fn () => $this->serverInfo['php']['icon'])
-                            ->iconColor(fn () => $this->serverInfo['php']['color'])
+                            ->icon(fn() => $this->serverInfo['php']['icon'])
+                            ->iconColor(fn() => $this->serverInfo['php']['color'])
                             ->columnSpan(['sm' => 6, 'xl' => 4])
                             ->collapsible()
                             ->compact()
-                            ->extraAttributes(fn () => $this->serverInfo['php']['extraAttributes'])
+                            ->extraAttributes(fn() => $this->serverInfo['php']['extraAttributes'])
                             ->schema([
                                 Infolists\Components\ImageEntry::make('php.logo')
                                     ->square()
@@ -562,15 +606,50 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         // headerActions will handle execuation
     }
 
-    private function runInstallationDirectoryCmd($command, $append = 'ls -la'): void
+    private function runSshOnRemoteServer($command)
     {
-        $command = !empty($command) ? "$command && $append" : $append;
+        $installationDirCommand = $this->getInstallationDirCommand();
+        $command = !empty($installationDirCommand) ? "$installationDirCommand && $command" : $command;
 
         $response = $this->execSimpleSSH($command);
 
         if ($response->status) {
             $response->icon = 'heroicon-o-command-line';
             $this->sendNotification($response);
+        }
+        $this->serverInfo['custom_cmd_output'] = $response->plain_body;
+    }
+
+    private function installApp()
+    {
+        $response = $this->runInstallationDirectoryCmd(append: 'rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/cv.git . && ls -la', return: true);
+        $this->serverInfo['directories'] = $response->plain_body;
+        $this->serverInfo['custom_cmd_output'] = $response->plain_body;
+    }
+
+    private function updateApp()
+    {
+        $this->runSshOnRemoteServer('git fetch && git pull');
+    }
+
+    private function runInstallationDirectoryCmd(?string $command = null, string $append = 'ls -la', bool $showNotification = true, bool $return = false)
+    {
+        if (!$command) {
+            $command = $this->getInstallationDirCommand(); // Perhaps can be empty
+        }
+        $command = !empty($command) ? "$command && $append" : $append;
+
+        $response = $this->execSimpleSSH($command);
+
+        if ($response->status) {
+            $response->icon = 'heroicon-o-command-line';
+            if ($showNotification) {
+                $this->sendNotification($response);
+            }
+
+            if ($return) {
+                return $response;
+            }
         }
 
         $this->serverInfo['directories'] = $response->plain_body;
