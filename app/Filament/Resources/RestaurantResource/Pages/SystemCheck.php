@@ -198,7 +198,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             ->hiddenLabel()
                             ->placeholder('Enter command like- ls, cd www, etc')
                             ->required()
-                            ->hint(new HtmlString("<small><code>$this->pwd</code></small>"))
+                            ->hint(fn() => new HtmlString("<small><code>$this->pwd</code></small>"))
                             ->hintColor('danger')
                             ->hintIcon('heroicon-o-question-mark-circle')
                             ->hintIconTooltip('This is the path where your custom command will be executed.')
@@ -634,7 +634,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     private function installApp()
     {
-        $response = $this->runInstallationDirectoryCmd(append: 'rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/cv.git . && ls -la', return :true);
+        $response = $this->runInstallationDirectoryCmd(append: 'rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/restaurant-demo-test.git . && ls -la', return :true);
         $this->serverInfo['directories'] = $response->plain_body;
         $this->serverInfo['custom_cmd_output'] = $response->plain_body;
     }

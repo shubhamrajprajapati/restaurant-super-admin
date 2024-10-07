@@ -1,6 +1,5 @@
 <x-filament-panels::page>
     @if ($this->defaultSSH->id)
-
         {{ $this->defaultSSHInfolist }}
         @if (count($this->serverInfo))
             {{ $this->serverEnvDetailsInfolist }}
