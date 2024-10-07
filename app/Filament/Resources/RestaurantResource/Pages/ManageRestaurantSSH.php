@@ -230,15 +230,13 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->label('Make Default')
                     ->requiresConfirmation()
                     ->visible(fn (Model $record) => !$record->is_valid || !$record->active)
-                    ->sendSuccessNotification()
-                    ->sendFailureNotification()
                     ->modalHeading(function (Model $record) {
                         return "Set '$record->host' as Default";
                     })
                     ->modalDescription(function (Model $record) {
                         return "If the provided credentials are correct, this will set '$record->host' as the default. All other SSH configurations for this restaurant will be reverted to non-default status.";
                     })
-                    ->action(function (Action $action) {
+                    ->action(function (Action $action): void {
                         try {
                             $sshConnected = new SSHService($action->getRecord());
                             if (!$sshConnected?->isConnected()) {
@@ -267,8 +265,6 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                             if ($action->getLivewire() instanceof SystemCheck) {
                                 $action->getLivewire()->dispatch('sshUpdated');
                             }
-
-                            return $action->getRecord();
                         } catch (\Exception $e) {
                             $action->getRecord()->update([
                                 'active' => false,
