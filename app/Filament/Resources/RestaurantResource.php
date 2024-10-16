@@ -36,7 +36,7 @@ class RestaurantResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return static::$model::count().static::$navigationBadgeTooltip;
+        return static::$model::count() . static::$navigationBadgeTooltip;
     }
 
     public static function form(Form $form): Form
@@ -137,13 +137,13 @@ class RestaurantResource extends Resource
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\Placeholder::make('Updated By')
-                            ->content(fn (Model $record): ?string => $record?->updater?->name),
+                            ->content(fn(Model $record): ?string => $record?->updater?->name),
                         Forms\Components\Placeholder::make('Updated At')
-                            ->content(fn (Model $record): ?string => $record?->updated_at?->diffForHumans()),
+                            ->content(fn(Model $record): ?string => $record?->updated_at?->diffForHumans()),
                         Forms\Components\Placeholder::make('Created By')
-                            ->content(fn (Model $record): string => $record?->creator?->name),
+                            ->content(fn(Model $record): string => $record?->creator?->name),
                         Forms\Components\Placeholder::make('Created At')
-                            ->content(fn (Model $record): string => $record?->created_at?->toFormattedDateString()),
+                            ->content(fn(Model $record): string => $record?->created_at?->toFormattedDateString()),
                     ]),
 
             ]);
@@ -164,22 +164,32 @@ class RestaurantResource extends Resource
                 Tables\Columns\TextColumn::make('domain')
                     ->searchable(),
                 Tables\Columns\IconColumn::make('featured')
+                    ->hidden()
                     ->boolean(),
                 Tables\Columns\IconColumn::make('visible')
+                    ->hidden()
                     ->boolean(),
                 Tables\Columns\IconColumn::make('verified')
+                    ->label('Is Installed')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('status')
+                    ->label('Close Restaurant')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('online_order_status')
+                    ->label('Online Order')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('reservation_status')
+                    ->label('Reservation')
                     ->boolean(),
                 Tables\Columns\IconColumn::make('shutdown_status')
+                    ->label('Shutdown')
                     ->boolean(),
-                Tables\Columns\TextColumn::make('updated_by_user_id')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_by_user_id')
+                Tables\Columns\TextColumn::make('creator.name')
+                    ->label('Created By')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updater.name')
+                    ->label('Updated By')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
