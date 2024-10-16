@@ -72,9 +72,9 @@ class ManageRestaurantSSH extends ManageRelatedRecords
     {
         return $form
             ->schema([
-                Forms\Components\ToggleButtons::make('active')
+                Forms\Components\ToggleButtons::make('is_valid')
                     ->default(false)
-                    ->label('Default Status')
+                    ->label('Valid Credentials')
                     ->boolean()
                     ->inline()
                     ->grouped()
