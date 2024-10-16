@@ -184,7 +184,6 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->label('Port')
                     ->sortable()
                     ->badge()
-                    ->numeric()
                     ->hiddenOn([SystemCheck::class]),
                 Tables\Columns\IconColumn::make('active')
                     ->label('Default'),
