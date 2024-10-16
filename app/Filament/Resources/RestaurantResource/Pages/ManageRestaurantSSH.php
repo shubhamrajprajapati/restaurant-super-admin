@@ -74,7 +74,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
             ->schema([
                 Forms\Components\ToggleButtons::make('active')
                     ->default(false)
-                    ->label('Active')
+                    ->label('Default Status')
                     ->boolean()
                     ->inline()
                     ->grouped()
