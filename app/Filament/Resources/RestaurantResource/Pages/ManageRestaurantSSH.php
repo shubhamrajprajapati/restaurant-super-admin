@@ -15,8 +15,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Livewire\Component;
 use Illuminate\Support\HtmlString;
+use Livewire\Component;
 
 class ManageRestaurantSSH extends ManageRelatedRecords
 {
@@ -216,7 +216,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                 Tables\Actions\CreateAction::make()
                     ->modalHeading('Create New Restaurant SSH Details')
                     ->label('New Restaurant SSH Details')
-                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire))
+                    ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire))
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['updated_by_user_id'] = auth()->id();
                         $data['created_by_user_id'] = auth()->id();
@@ -228,7 +228,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                 Tables\Actions\Action::make('make_default')
                     ->label('Make Default')
                     ->requiresConfirmation()
-                    ->visible(fn (Model $record) => !$record->is_valid || !$record->active)
+                    ->visible(fn(Model $record) => !$record->is_valid || !$record->active)
                     ->modalHeading(function (Model $record) {
                         return "Set '$record->host' as Default";
                     })
@@ -238,31 +238,29 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                     ->action(function (Action $action): void {
                         try {
                             $sshConnected = new SSHService($action->getRecord());
-                            if (!$sshConnected?->isConnected()) {
-                                dd('Error: SSH connection not established.');
-                            }
+                            if ($sshConnected->ssh->isConnected() && $sshConnected->ssh->isAuthenticated()) {
+                                $action->getRecord()->restaurant->ssh()->where('id', '!=', $action->getRecord()->id)->each(
+                                    fn(Model $ssh) => $ssh->update([
+                                        'active' => false,
+                                    ])
+                                );
 
-                            $action->getRecord()->restaurant->ssh()->where('id', '!=', $action->getRecord()->id)->each(
-                                fn (Model $ssh) => $ssh->update([
-                                    'active' => false,
-                                ])
-                            );
+                                $action->getRecord()->update([
+                                    'active' => true,
+                                    'is_valid' => true,
+                                    'updated_by_user_id' => auth()->id(),
+                                ]);
 
-                            $action->getRecord()->update([
-                                'active' => true,
-                                'is_valid' => true,
-                                'updated_by_user_id' => auth()->id(),
-                            ]);
+                                Notification::make()
+                                    ->success()
+                                    ->color('success')
+                                    ->title(__('SSH Authentication Successful!'))
+                                    ->body(__('Congrats! SSH connected successfully and set as default.'))
+                                    ->send();
 
-                            Notification::make()
-                                ->success()
-                                ->color('success')
-                                ->title(__('SSH Authentication Successful!'))
-                                ->body(__('Congrats! SSH connected successfully and set as default.'))
-                                ->send();
-
-                            if ($action->getLivewire() instanceof SystemCheck) {
-                                $action->getLivewire()->dispatch('sshUpdated');
+                                if ($action->getLivewire() instanceof SystemCheck) {
+                                    $action->getLivewire()->dispatch('sshUpdated');
+                                }
                             }
                         } catch (\Exception $e) {
                             $action->getRecord()->update([
@@ -279,33 +277,33 @@ class ManageRestaurantSSH extends ManageRelatedRecords
                         }
                     }),
                 Tables\Actions\ViewAction::make()
-                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                 Tables\Actions\EditAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['updated_by_user_id'] = auth()->id();
 
                         return $data;
                     })
-                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                 Tables\Actions\ForceDeleteAction::make()
-                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                 Tables\Actions\RestoreAction::make()
-                    ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                    ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                        ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                     Tables\Actions\RestoreBulkAction::make()
-                        ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                        ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                     Tables\Actions\ForceDeleteBulkAction::make()
-                        ->hidden(fn (Component $livewire) => $this->hiddenCheck($livewire)),
+                        ->hidden(fn(Component $livewire) => $this->hiddenCheck($livewire)),
                 ]),
             ])
             ->modifyQueryUsing(
-                fn (Builder $query) => $query->withoutGlobalScopes([
+                fn(Builder $query) => $query->withoutGlobalScopes([
                     SoftDeletingScope::class,
                 ])
             );
