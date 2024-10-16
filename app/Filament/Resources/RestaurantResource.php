@@ -90,16 +90,25 @@ class RestaurantResource extends Resource
                                     ->required()
                                     ->autosize()
                                     ->columnSpanFull(),
-                                Forms\Components\Fieldset::make('Restaurant Name & Domain Url')
+                                Forms\Components\Fieldset::make('Restaurant App Installation Status')
                                     ->columns(['lg' => 3])
                                     ->columnSpan(['lg' => 12])
                                     ->schema([
                                         Forms\Components\Toggle::make('featured')
+                                            ->hidden()
                                             ->required(),
                                         Forms\Components\Toggle::make('visible')
+                                            ->hidden()
                                             ->required(),
                                         Forms\Components\Toggle::make('verified')
-                                            ->required(),
+                                            ->default(false)
+                                            ->onColor('success')
+                                            ->offColor('danger')
+                                            ->onIcon('heroicon-o-arrow-down-tray')
+                                            ->offIcon('heroicon-o-no-symbol')
+                                            ->label('Installed')
+                                            ->helperText('Toggle to indicate if the Restaurant App is installed. If the installation is incomplete, switch off to enable the installation button in the system check. This option is intended for debugging and processing manual installations.')
+                                            ->columnSpanFull(),
                                     ]),
                             ]),
                         Forms\Components\Tabs\Tab::make('Settings')
