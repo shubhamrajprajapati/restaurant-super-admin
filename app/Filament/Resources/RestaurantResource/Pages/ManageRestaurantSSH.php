@@ -226,7 +226,7 @@ class ManageRestaurantSSH extends ManageRelatedRecords
             ])
             ->actions([
                 Tables\Actions\Action::make('make_default')
-                    ->label('Make Default')
+                    ->label('Set as Default')
                     ->requiresConfirmation()
                     ->visible(fn(Model $record) => !$record->is_valid || !$record->active)
                     ->modalHeading(function (Model $record) {
