@@ -216,15 +216,7 @@ class RestaurantResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $data['updated_by_user_id'] = auth()->id();
-                        $data['created_by_user_id'] = auth()->id();
-
-                        return $data;
-                    }),
-            ])
+            ->headerActions([])
             ->actions([
                 Tables\Actions\EditAction::make()->mutateFormDataUsing(function (array $data): array {
                     $data['updated_by_user_id'] = auth()->id();
