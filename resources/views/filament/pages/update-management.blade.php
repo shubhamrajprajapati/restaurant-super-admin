@@ -1,7 +1,9 @@
 <x-filament-panels::page>
 
-<div class="overflow-x-auto">
-    <pre class="max-w-full">{!! $this->data['change_log'] !!}</pre><br>
-</div>
+    {{ $this->checkForUpdatesInfolist }}
+    
+    <div class="overflow-x-auto">
+        <pre class="max-w-full">{!! $this->change_log() !!}</pre><br>
+    </div>
 
 </x-filament-panels::page>

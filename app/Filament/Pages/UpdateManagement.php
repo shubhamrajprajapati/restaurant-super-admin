@@ -2,7 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use Carbon\Carbon;
+use Filament\Infolists;
+use Filament\Infolists\Components\TextEntry\TextEntrySize;
+use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\HtmlString;
 
 class UpdateManagement extends Page
 {
@@ -10,13 +16,114 @@ class UpdateManagement extends Page
 
     protected static string $view = 'filament.pages.update-management';
 
-    protected $data = [];
+    protected ?array $data;
+
+    protected bool $isUpdateAvailable = false;
 
     public function mount()
     {
-        $this->data = [
-            'change_log' => $this->ansiToHtml(shell_exec('git log --graph')),
-        ];
+        //
+    }
+
+    public function change_log()
+    {
+        return $this->ansiToHtml(shell_exec('git log --graph'));
+    }
+
+    private function checkGitUpdates($showNotification = false)
+    {
+        // To see if there are new commits on the remote that are not in your local branch:
+        // git fetch github && git log main..github/main
+        // To check if there are commits in your local branch that are not in the remote: git log github/main..main
+        $output = $this->ansiToHtml(shell_exec('git fetch github && git log HEAD..github/main'));
+        $this->isUpdateAvailable = empty($output) ? false : true;
+
+        if ($showNotification) {
+            Notification::make('check_for_updates_notification')
+                ->title(fn() => $this->isUpdateAvailable ? 'Update Available!' : 'No Updates Available')
+                ->body(fn() => $this->isUpdateAvailable ? 'A new update is ready to install. Click the button below to install the latest features and improvements.' : 'Your application is up to date! You are currently using the latest version with all features and improvements.')
+                ->color(fn() => $this->isUpdateAvailable ? 'success' : 'info')
+                ->icon(fn() => $this->isUpdateAvailable ? 'herocion-o-check-circle' : 'heroicon-o-information-circle')
+                ->send();
+        }
+
+        return $output;
+    }
+
+    private function getFormattedTime(): string
+    {
+        return Carbon::now()->format('h:i A T');
+    }
+
+    private function installAndUpdateNow()
+    {
+        $commandToUpdate = app()->environment('local') ? null : '&& git rebase github/main main';
+        $output = $this->ansiToHtml(shell_exec("git fetch github $commandToUpdate"));
+        $this->checkGitUpdates();
+
+        Notification::make('install_and_update_now_notification')
+            ->title('Update Installed Successfully!')
+            ->body(join(["The latest update has been installed. Thank you for keeping your application up to date! You can now enjoy the new features and improvements.", empty($output) ? null : "<br><br><div class='overflow-x-auto'><pre>{$output}</pre><br><div>"]))
+            ->success()
+            ->send();
+    }
+
+    public function checkForUpdatesInfolist(Infolist $infolist)
+    {
+        return $infolist
+            ->state([
+                'updates' => $this->checkGitUpdates(),
+                'heading' => fn() => $this->isUpdateAvailable ? 'Updates available' : 'You\'re up to date',
+                'deployment_history' => 'Deployment History: Recent Changes',
+            ])
+            ->schema([
+                Infolists\Components\Section::make()
+                    ->heading('Website Updates')
+                    ->compact()
+                    ->collapsible()
+                    ->schema([
+                        Infolists\Components\TextEntry::make('heading')
+                            ->icon('heroicon-o-arrow-path')
+                            ->hiddenLabel()
+                            ->helperText(fn() => 'Last checked: Today, ' . $this->getFormattedTime())
+                            ->size(TextEntrySize::Large)
+                            ->suffixActions([
+                                Infolists\Components\Actions\Action::make('install_update')
+                                    ->visible($this->isUpdateAvailable)
+                                    ->label('Install Update')
+                                    ->color('success')
+                                    ->icon('heroicon-o-folder-arrow-down')
+                                    ->button()
+                                    ->requiresConfirmation()
+                                    ->modalHeading('Ready to Install Update')
+                                    ->modalDescription('You are about to install the latest update. This will include new features, improvements, and bug fixes. Please ensure that you save your work before proceeding.')
+                                    ->modalSubmitActionLabel('Install Now')
+                                    ->action(function () {
+                                        $this->installAndUpdateNow();
+                                    }),
+                                Infolists\Components\Actions\Action::make('check_for_update')
+                                    ->hidden($this->isUpdateAvailable)
+                                    ->label('Check for updates')
+                                    ->icon('heroicon-o-arrow-path')
+                                    ->button()
+                                    ->action(function (): void {
+                                        $this->checkGitUpdates(true);
+                                    }),
+                            ]
+                            ),
+                        Infolists\Components\TextEntry::make('updates')
+                            ->visible($this->isUpdateAvailable)
+                            ->html()
+                            ->extraAttributes(['class' => 'overflow-x-auto'])
+                            ->prefix(fn() => new HtmlString('<pre>'))
+                            ->suffix(fn() => new HtmlString('</pre><br>')),
+                    ]),
+                Infolists\Components\TextEntry::make('deployment_history')
+                    ->hiddenLabel()
+                    ->size(TextEntrySize::Large)
+                    ->icon('heroicon-o-arrow-path-rounded-square')
+                    ->helperText('This section summarizes the recent updates made to the application. Each entry includes the commit hash, author, date, and a brief description of the changes implemented.'),
+            ]);
     }
 
     protected function ansiToHtml($text)
