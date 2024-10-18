@@ -81,7 +81,9 @@ class UpdateManagement extends Page
                     ->collapsible()
                     ->schema([
                         Infolists\Components\TextEntry::make('heading')
-                            ->icon('heroicon-o-arrow-path')
+                            ->icon(fn() => $this->isUpdateAvailable ? 'heroicon-o-arrow-path' : 'heroicon-s-check-circle')
+                            ->color(fn() => $this->isUpdateAvailable ? 'info' : 'success')
+                            ->iconColor(fn() => $this->isUpdateAvailable ? 'info' : 'success')
                             ->hiddenLabel()
                             ->helperText(fn() => 'Last checked: Today, ' . $this->getFormattedTime())
                             ->size(TextEntrySize::Large)
