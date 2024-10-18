@@ -16,8 +16,6 @@ class UpdateManagement extends Page
 
     protected static string $view = 'filament.pages.update-management';
 
-    protected ?array $data;
-
     protected bool $isUpdateAvailable = false;
 
     public function mount()
