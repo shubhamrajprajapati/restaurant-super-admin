@@ -6,6 +6,7 @@ use App\Filament\Resources\RestaurantResource\Pages;
 use App\Models\Restaurant;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Pages\SubNavigationPosition;
 use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
@@ -113,14 +114,99 @@ class RestaurantResource extends Resource
                             ]),
                         Forms\Components\Tabs\Tab::make('Settings')
                             ->schema([
-                                Forms\Components\Toggle::make('status')
-                                    ->required(),
-                                Forms\Components\Toggle::make('online_order_status')
-                                    ->required(),
-                                Forms\Components\Toggle::make('reservation_status')
-                                    ->required(),
-                                Forms\Components\Toggle::make('shutdown_status')
-                                    ->required(),
+                                Forms\Components\Section::make('Close Restaurant')
+                                    ->description('Manage the status and message for temporarily closing your restaurant.')
+                                    ->compact()
+                                    ->aside()
+                                    ->schema([
+                                        Forms\Components\Toggle::make('status')
+                                            ->label(fn(Get $get): ?string => $get('status') ? 'Closed Now' : 'Open Now')
+                                            ->helperText(
+                                                fn(Get $get): ?string => $get('status')
+                                                ? 'The service is currently marked as closed. You can also add a custom closing message.'
+                                                : 'The restaurant is currently open. You can click the toggle button to mark it as closed.')
+                                            ->onIcon('heroicon-o-lock-closed')
+                                            ->onColor('danger')
+                                            ->offIcon('heroicon-o-lock-open')
+                                            ->offColor('success')
+                                            ->live(),
+                                        Forms\Components\RichEditor::make('status_msg')
+                                            ->label('Closure Message')
+                                            ->placeholder('Type a message for customers regarding the closure.')
+                                            ->visible(fn(Get $get): bool => $get('status')),
+                                    ]),
+                                Forms\Components\Section::make('Online Order')
+                                    ->description('Set the availability of online orders and communicate any changes.')
+                                    ->compact()
+                                    ->aside()
+                                    ->schema([
+                                        Forms\Components\Toggle::make('online_order_status')
+                                            ->label(
+                                                fn(Get $get): string => $get('online_order_status') ? 'Open for Online Orders' : 'Closed for Online Orders'
+                                            )
+                                            ->helperText(
+                                                fn(Get $get): string => $get('online_order_status')
+                                                ? 'The restaurant is open for online orders. Click the toggle button to mark it as closed.'
+                                                : 'The restaurant is currently closed for online orders. Toggle on to allow orders again. You can also add a custom closing message.'
+                                            )
+                                            ->onIcon('heroicon-o-shopping-cart')
+                                            ->onColor('success')
+                                            ->offIcon('heroicon-o-shopping-cart')
+                                            ->offColor('danger')
+                                            ->live(),
+                                        Forms\Components\RichEditor::make('online_order_msg')
+                                            ->label('Order Message')
+                                            ->placeholder('Type a message for customers regarding closing online orders.')
+                                            ->hidden(fn(Get $get): bool => $get('online_order_status')),
+                                    ]),
+                                Forms\Components\Section::make('Reservation')
+                                    ->description('Control the reservation status and provide necessary information.')
+                                    ->compact()
+                                    ->aside()
+                                    ->schema([
+                                        Forms\Components\Toggle::make('reservation_status')
+                                            ->label(
+                                                fn(Get $get): string => $get('reservation_status') ? 'Open for Reservations' : 'Closed for Reservations'
+                                            )
+                                            ->helperText(
+                                                fn(Get $get): string => $get('reservation_status')
+                                                ? 'The restaurant is open for reservations. Click the toggle button to mark it as closed for new reservations.'
+                                                : 'The restaurant is currently closed for reservations. Toggle off to allow reservations again. You can also add a custom closing message.'
+                                            )
+                                            ->onIcon('heroicon-o-calendar-days')
+                                            ->onColor('success')
+                                            ->offIcon('heroicon-o-calendar-days')
+                                            ->offColor('danger')
+                                            ->live(),
+                                        Forms\Components\RichEditor::make('reservation_msg')
+                                            ->label('Reservation Closing Message')
+                                            ->placeholder('Type a message for customers regarding closing reservations.')
+                                            ->hidden(fn(Get $get): bool => $get('reservation_status')),
+                                    ]),
+                                Forms\Components\Section::make('Shutdown')
+                                    ->description('Manage the restaurant shutdown process and communicate with customers.')
+                                    ->compact()
+                                    ->aside()
+                                    ->schema([
+                                        Forms\Components\Toggle::make('shutdown_status')
+                                            ->label(
+                                                fn(Get $get): string => $get('shutdown_status') ? 'Shutdown' : 'Operational'
+                                            )
+                                            ->helperText(
+                                                fn(Get $get): string => $get('shutdown_status')
+                                                ? 'The restaurant is currently shut down. Toggle off to resume operations. You can also add a custom shutdown message.'
+                                                : 'The restaurant is operational. Click the toggle button to mark it as shut down.'
+                                            )
+                                            ->onIcon('heroicon-o-power')
+                                            ->onColor('danger')
+                                            ->offIcon('heroicon-o-check')
+                                            ->offColor('success')
+                                            ->live(),
+                                        Forms\Components\RichEditor::make('shutdown_msg')
+                                            ->label('Shutdown Message')
+                                            ->placeholder('Type a message for customers regarding the shutdown.')
+                                            ->hidden(fn(Get $get): bool => !$get('shutdown_status')),
+                                    ]),
                             ]),
                         Forms\Components\Tabs\Tab::make('Other Details')
                             ->schema([
