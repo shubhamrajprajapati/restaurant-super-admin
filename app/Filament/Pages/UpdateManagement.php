@@ -8,6 +8,7 @@ use Filament\Infolists\Components\TextEntry\TextEntrySize;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\ActionSize;
 use Illuminate\Support\HtmlString;
 
 class UpdateManagement extends Page
@@ -53,6 +54,16 @@ class UpdateManagement extends Page
         return Carbon::now()->format('h:i A T');
     }
 
+    private function sendNotification(\stdClass $data = null): void
+    {
+        Notification::make()
+            ->title($data?->title)
+            ->body($data?->body)
+            ->status(fn() => $data?->type ?? ($data?->status ? 'success' : 'danger'))
+            ->icon(fn() => isset($data?->icon) ? ($data?->icon ?: null): null)
+            ->send();
+    }
+
     private function installAndUpdateNow()
     {
         $commandToUpdate = app()->environment('local') ? null : '&& git rebase github/main main';
@@ -78,6 +89,40 @@ class UpdateManagement extends Page
                 Infolists\Components\Section::make()
                     ->heading('Website Updates')
                     ->compact()
+                    ->headerActions([
+                        Infolists\Components\Actions\Action::make('Optimize')
+                            ->label('Optimize Now')
+                            ->icon('heroicon-o-bolt')
+                            ->size(ActionSize::ExtraSmall)
+                            ->color('success')
+                            ->action(function () {
+                                $applicationOptimize = shell_exec('cd .. && php artisan optimize');
+                                $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize');
+
+                                $notification = new \stdClass();
+                                $notification->title = "Optimization Completed Successfully!";
+                                $notification->body = "<div class='overflow-x-auto'><pre>{$applicationOptimize} {$filamentOptimize}</pre><br></div>";
+                                $notification->type = 'success';
+
+                                return $this->sendNotification($notification);
+                            }),
+                        Infolists\Components\Actions\Action::make('Clear_Optimize')
+                            ->label('Clear Optimization')
+                            ->icon('heroicon-o-bolt-slash')
+                            ->size(ActionSize::ExtraSmall)
+                            ->color('danger')
+                            ->action(function () {
+                                $applicationOptimize = shell_exec('cd .. && php artisan optimize:clear');
+                                $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize-clear');
+
+                                $notification = new \stdClass();
+                                $notification->title = "Optimization Cleared Successfully!";
+                                $notification->body = "<div class='overflow-x-auto'><pre>{$applicationOptimize} {$filamentOptimize}</pre><br></div>";
+                                $notification->type = 'success';
+
+                                return $this->sendNotification($notification);
+                            }),
+                    ])
                     ->collapsible()
                     ->schema([
                         Infolists\Components\TextEntry::make('heading')
@@ -128,41 +173,43 @@ class UpdateManagement extends Page
 
     protected function ansiToHtml($text)
     {
-        // Escape HTML special characters
-        $text = htmlspecialchars($text);
+        if ($text) {
+            // Escape HTML special characters
+            $text = htmlspecialchars($text);
 
-        // Define ANSI color codes and styles
-        $ansiColors = [
-            '/\e\[30m/' => '<span style="color: black;">',
-            '/\e\[31m/' => '<span style="color: red;">',
-            '/\e\[32m/' => '<span style="color: green;">',
-            '/\e\[33m/' => '<span style="color: yellow;">',
-            '/\e\[34m/' => '<span style="color: blue;">',
-            '/\e\[35m/' => '<span style="color: magenta;">',
-            '/\e\[36m/' => '<span style="color: cyan;">',
-            '/\e\[37m/' => '<span style="color: white;">',
-            '/\e\[90m/' => '<span style="color: gray;">', // Bright black (gray)
-            '/\e\[91m/' => '<span style="color: lightcoral;">', // Bright red
-            '/\e\[92m/' => '<span style="color: lightgreen;">', // Bright green
-            '/\e\[93m/' => '<span style="color: lightyellow;">', // Bright yellow
-            '/\e\[94m/' => '<span style="color: lightblue;">', // Bright blue
-            '/\e\[95m/' => '<span style="color: pink;">', // Bright magenta
-            '/\e\[96m/' => '<span style="color: lightcyan;">', // Bright cyan
-            '/\e\[97m/' => '<span style="color: lightgray;">', // Bright white
-            '/\e\[0m/' => '</span>', // Reset
-            '/\e\[1m/' => '<strong>', // Bold
-            '/\e\[22m/' => '</strong>', // End bold
-            '/\e\[4m/' => '<u>', // Underline
-            '/\e\[24m/' => '</u>', // End underline
-        ];
+            // Define ANSI color codes and styles
+            $ansiColors = [
+                '/\e\[30m/' => '<span style="color: black;">',
+                '/\e\[31m/' => '<span style="color: red;">',
+                '/\e\[32m/' => '<span style="color: green;">',
+                '/\e\[33m/' => '<span style="color: yellow;">',
+                '/\e\[34m/' => '<span style="color: blue;">',
+                '/\e\[35m/' => '<span style="color: magenta;">',
+                '/\e\[36m/' => '<span style="color: cyan;">',
+                '/\e\[37m/' => '<span style="color: white;">',
+                '/\e\[90m/' => '<span style="color: gray;">', // Bright black (gray)
+                '/\e\[91m/' => '<span style="color: lightcoral;">', // Bright red
+                '/\e\[92m/' => '<span style="color: lightgreen;">', // Bright green
+                '/\e\[93m/' => '<span style="color: lightyellow;">', // Bright yellow
+                '/\e\[94m/' => '<span style="color: lightblue;">', // Bright blue
+                '/\e\[95m/' => '<span style="color: pink;">', // Bright magenta
+                '/\e\[96m/' => '<span style="color: lightcyan;">', // Bright cyan
+                '/\e\[97m/' => '<span style="color: lightgray;">', // Bright white
+                '/\e\[0m/' => '</span>', // Reset
+                '/\e\[1m/' => '<strong>', // Bold
+                '/\e\[22m/' => '</strong>', // End bold
+                '/\e\[4m/' => '<u>', // Underline
+                '/\e\[24m/' => '</u>', // End underline
+            ];
 
-        // Replace ANSI codes with HTML spans
-        foreach ($ansiColors as $pattern => $replacement) {
-            $text = preg_replace($pattern, $replacement, $text);
+            // Replace ANSI codes with HTML spans
+            foreach ($ansiColors as $pattern => $replacement) {
+                $text = preg_replace($pattern, $replacement, $text);
+            }
+
+            // Handle special characters for graph
+            $text = str_replace(['*', '|', '\\'], ['&#9733;', '&#124;', '&#92;'], $text); // Replace graph symbols
         }
-
-        // Handle special characters for graph
-        $text = str_replace(['*', '|', '\\'], ['&#9733;', '&#124;', '&#92;'], $text); // Replace graph symbols
 
         return $text;
     }
