@@ -638,7 +638,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
         $restaurant = Restaurant::with(['db' => function ($query) {
             $query->whereActive(true)
                 ->whereIsValid(true);
-        }])->findOrFail($this->record);
+        }])->findOrFail($this->record->id);
 
         // Step 1: Render the .env file content
         $envContent = view('installation.env', compact('restaurant'))->render(); // Assuming you're in a Laravel context
