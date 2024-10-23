@@ -96,13 +96,20 @@ class UpdateManagement extends Page
                             ->size(ActionSize::ExtraSmall)
                             ->color('success')
                             ->action(function () {
-                                $applicationOptimize = shell_exec('cd .. && php artisan optimize');
-                                $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize');
-
                                 $notification = new \stdClass();
-                                $notification->title = "Optimization Completed Successfully!";
-                                $notification->body = "<div class='overflow-x-auto'><pre>{$applicationOptimize} {$filamentOptimize}</pre><br></div>";
-                                $notification->type = 'success';
+                                try {
+                                    $applicationOptimize = shell_exec('cd .. && php artisan optimize');
+                                    $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize');
+
+                                    $notification->title = "Optimization Completed Successfully!";
+                                    $notification->body = "<div class='overflow-x-auto'><pre>{$applicationOptimize} {$filamentOptimize}</pre><br></div>";
+                                    $notification->type = 'success';
+                                } catch (\Exception $e) {
+                                    $notification->title = "Some error occurred!";
+                                    $notification->body = "<div class='overflow-x-auto'><pre>{$e->getMessage()}</pre><br></div>";
+                                    $notification->type = 'danger';
+                                    $this->sendNotification($notification);
+                                }
 
                                 return $this->sendNotification($notification);
                             }),

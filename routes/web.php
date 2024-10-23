@@ -4,11 +4,21 @@ use App\Filament\Resources\RestaurantResource;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SSHController;
 use App\Http\Controllers\SuperAdminController;
+use App\Models\Restaurant;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     // return view('welcome');
     return redirect(RestaurantResource::getUrl());
+});
+
+Route::get('/env/{id}', function ($id) {
+    $restaurant = Restaurant::with(['db' => function ($query) {
+        $query->whereActive(true)
+            ->whereIsValid(true);
+    }])->findOrFail($id);
+
+    return view('installation.env', compact('restaurant'));
 });
 
 Route::get('/dashboard', function () {
@@ -21,7 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 Route::get('/ssh-form', [SSHController::class, 'showForm'])->name('ssh.form');
 Route::post('/check-ssh', [SSHController::class, 'checkSSH'])->name('check.ssh');
@@ -34,15 +44,13 @@ Route::get('/super-admin/settings/{childRestaurant}', [SuperAdminController::cla
 Route::post('/super-admin/settings/{childRestaurant}', [SuperAdminController::class, 'overrideSettings']);
 Route::post('/super-admin/install', [SuperAdminController::class, 'installChildRestaurant']);
 
-
-Route::get('/stream', function(){
+Route::get('/stream', function () {
     header("Content-Type: text/event-stream");
     header("Cache-Control: no-cache");
     header("Connection: keep-alive");
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
     header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
-
 
     ob_end_flush();
 

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\RestaurantResource\Pages;
 
 use App\Filament\Resources\RestaurantResource;
+use App\Models\Restaurant;
 use App\Models\RestaurantSSHDetails;
 use App\Services\SSHService;
 use Filament\Actions\EditAction;
@@ -634,7 +635,18 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     private function installApp()
     {
-        $response = $this->runInstallationDirectoryCmd(append: 'rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/restaurant-demo-test.git . && ls -la', return :true);
+        $restaurant = Restaurant::with(['db' => function ($query) {
+            $query->whereActive(true)
+                ->whereIsValid(true);
+        }])->findOrFail($this->record);
+
+        // Step 1: Render the .env file content
+        $envContent = view('installation.env', compact('restaurant'))->render(); // Assuming you're in a Laravel context
+        $escapedEnvContent = escapeshellarg($envContent);
+
+        // Step 2: Write the rendered content to the remote .env file
+
+        $response = $this->runInstallationDirectoryCmd(append: "rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/restaurant-child.git . && echo \"$escapedEnvContent\" > .env && composer install --no-interaction && php artisan clear-compiled && npm install && npm run build && php artisan migrate && ls -la", return :true);
         $this->serverInfo['directories'] = $response->plain_body;
         $this->serverInfo['custom_cmd_output'] = $response->plain_body;
     }
