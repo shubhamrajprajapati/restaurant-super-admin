@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\API\v1\SuperAdminController;
+use App\Http\Controllers\API\V1\SuperAdminController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
