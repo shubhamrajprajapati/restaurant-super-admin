@@ -641,7 +641,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
         $restaurant = Restaurant::with(['db' => function ($query) {
             $query->whereActive(true)
-                ->whereIsValid(2);
+                ->whereIsValid(true);
         }])->findOrFail($restaurantId);
 
         // Check if db details not exists then show a notification
