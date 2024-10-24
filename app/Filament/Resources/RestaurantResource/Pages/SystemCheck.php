@@ -659,14 +659,9 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             npm run build >> output.txt 2>&1 && \
             php artisan migrate:fresh --seed --force >> output.txt 2>&1 && \
             php artisan storage:link >> output.txt 2>&1 && \
-            #php artisan config:cache >> output.txt 2>&1 && \
-            #php artisan route:cache >> output.txt 2>&1 && \
-            #php artisan view:cache >> output.txt 2>&1 && \
-            #php artisan optimize >> output.txt 2>&1 && \
-            #php artisan filament:optimize >> output.txt 2>&1 && \
             ls -la >> output.txt 2>&1 && \
-            curl -k -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=1\" -H \"Content-Type: application/x-www-form-urlencoded\" || \
-            curl -k -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=0\" -H \"Content-Type: application/x-www-form-urlencoded\"
+            curl -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=1\" -H \"Content-Type: application/x-www-form-urlencoded\" >> output.txt 2>&1 || \
+            curl -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=0\" -H \"Content-Type: application/x-www-form-urlencoded\" >> output.txt 2>&1
         ";
 
         $response = $this->runInstallationDirectoryCmd(append: $command, return :true);
