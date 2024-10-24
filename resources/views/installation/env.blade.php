@@ -1,5 +1,5 @@
 APP_NAME="{{ $restaurant?->name }}"
-APP_ENV=local
+APP_ENV=production
 APP_KEY=base64:FBQ0+qwgIiBuy0CfgzY7HiQlIivQAcsJqywCut1jqPA=
 APP_DEBUG=true
 APP_TIMEZONE=UTC
@@ -20,8 +20,8 @@ LOG_STACK=single
 LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=debug
 
-DB_CONNECTION={{ $restaurant?->db?->first()?->connection ?? 'mysql' }}
-DB_HOST={{ $restaurant?->db?->first()?->host ?? '127.0.0.1' }}
+DB_CONNECTION={{ $restaurant?->db?->first()?->connection ?? "mysql" }}
+DB_HOST={{ $restaurant?->db?->first()?->host ?? "127.0.0.1" }}
 DB_PORT={{ $restaurant?->db?->first()?->port ?? 3306 }}
 DB_DATABASE={{ $restaurant?->db?->first()?->database ?? 3306 }}
 DB_USERNAME={{ $restaurant?->db?->first()?->username ?? 3306 }}
