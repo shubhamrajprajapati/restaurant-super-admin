@@ -27,7 +27,7 @@ DB_DATABASE={{ $restaurant?->db?->first()?->database ?? 3306 }}
 DB_USERNAME={{ $restaurant?->db?->first()?->username ?? 3306 }}
 DB_PASSWORD={{ $restaurant?->db?->first()?->password ?? 3306 }}
 
-SESSION_DRIVER=database
+SESSION_DRIVER=file
 SESSION_LIFETIME=120
 SESSION_ENCRYPT=false
 SESSION_PATH=/
