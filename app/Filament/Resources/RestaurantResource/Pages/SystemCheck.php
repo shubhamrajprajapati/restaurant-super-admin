@@ -446,6 +446,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
                             }),
                         Infolists\Components\Actions\Action::make('install')
                             ->requiresConfirmation()
+                            ->hidden($this->record?->verified)
                             ->label('Install Restaurant App')
                             ->modalDescription(new HtmlString('Clicking <b>Install</b> will permanently delete all files and folders from the Installation directory and initiate the installation process. Please ensure you have backed up any important data before proceeding.'))
                             ->color('danger')
@@ -635,18 +636,40 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     private function installApp()
     {
+        $restaurantId = $this->record->id;
+        $updateInstallationStatusUrl = route('api.update-installation-status');
+
         $restaurant = Restaurant::with(['db' => function ($query) {
             $query->whereActive(true)
                 ->whereIsValid(true);
-        }])->findOrFail($this->record->id);
+        }])->findOrFail($restaurantId);
 
-        // Step 1: Render the .env file content
-        $envContent = view('installation.env', compact('restaurant'))->render(); // Assuming you're in a Laravel context
-        $escapedEnvContent = escapeshellarg($envContent);
+        // Render the Blade view
+        $envContent = view('installation.env', compact('restaurant'))->render();
 
-        // Step 2: Write the rendered content to the remote .env file
+        // Construct the command to run
+        $command = "
+            rm -rf ./* .[^.]* && \
+            git clone https://github.com/shubhamrajprajapati/restaurant-child.git . && \
+            echo '$envContent' > .env && \
+            composer install --no-interaction && \
+            php artisan key:generate --force >> output.txt 2>&1 && \
+            php artisan clear-compiled >> output.txt 2>&1 && \
+            npm install >> output.txt 2>&1 && \
+            npm run build >> output.txt 2>&1 && \
+            php artisan migrate:fresh --seed --force >> output.txt 2>&1 && \
+            php artisan storage:link >> output.txt 2>&1 && \
+            #php artisan config:cache >> output.txt 2>&1 && \
+            #php artisan route:cache >> output.txt 2>&1 && \
+            #php artisan view:cache >> output.txt 2>&1 && \
+            #php artisan optimize >> output.txt 2>&1 && \
+            #php artisan filament:optimize >> output.txt 2>&1 && \
+            ls -la >> output.txt 2>&1 && \
+            curl -k -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=1\" -H \"Content-Type: application/x-www-form-urlencoded\" || \
+            curl -k -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=0\" -H \"Content-Type: application/x-www-form-urlencoded\"
+        ";
 
-        $response = $this->runInstallationDirectoryCmd(append: "rm -rf ./* .[^.]* && git clone https://github.com/shubhamrajprajapati/restaurant-child.git . && echo \"$escapedEnvContent\" > .env && composer install --no-interaction && php artisan clear-compiled && npm install && npm run build && php artisan migrate && ls -la", return :true);
+        $response = $this->runInstallationDirectoryCmd(append: $command, return :true);
         $this->serverInfo['directories'] = $response->plain_body;
         $this->serverInfo['custom_cmd_output'] = $response->plain_body;
     }
