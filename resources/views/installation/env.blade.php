@@ -4,7 +4,7 @@ APP_KEY=base64:FBQ0+qwgIiBuy0CfgzY7HiQlIivQAcsJqywCut1jqPA=
 APP_DEBUG=true
 APP_TIMEZONE=UTC
 APP_URL={{ $restaurant?->domain }}
-ASSET_URL="${APP_URL}/public"
+#ASSET_URL="${APP_URL}/public"
 
 APP_LOCALE=en
 APP_FALLBACK_LOCALE=en
