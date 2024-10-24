@@ -641,8 +641,17 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
         $restaurant = Restaurant::with(['db' => function ($query) {
             $query->whereActive(true)
-                ->whereIsValid(true);
+                ->whereIsValid(2);
         }])->findOrFail($restaurantId);
+
+        // Check if db details not exists then show a notification
+        if ($restaurant->db->count() <= 0) {
+            $data = new \stdClass;
+            $data->title = "Unable to Install Restaurant App";
+            $data->body = "No default database details were found for this restaurant. Please set it as the default in the Database Details tab.";
+            $data->type = "danger";
+            return $this->sendNotification($data);
+        }
 
         // Render the Blade view
         $envContent = view('installation.env', compact('restaurant'))->render();
