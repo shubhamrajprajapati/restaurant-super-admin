@@ -15,6 +15,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Str;
 
 class RestaurantResource extends Resource
 {
@@ -52,6 +53,8 @@ class RestaurantResource extends Resource
                             ->columnSpanFull()
                             ->columns(12)
                             ->schema([
+                                Forms\Components\Hidden::make('installation_token')
+                                    ->default(Str::random(40)),
                                 Forms\Components\Fieldset::make('Restaurant Logo')
                                     ->columnSpan(['lg' => 3])
                                     ->schema([
