@@ -32,9 +32,9 @@ class UpdateManagement extends Page
     private function checkGitUpdates($showNotification = false)
     {
         // To see if there are new commits on the remote that are not in your local branch:
-        // git fetch github && git log main..github/main
-        // To check if there are commits in your local branch that are not in the remote: git log github/main..main
-        $output = $this->ansiToHtml(shell_exec('git fetch github && git log HEAD..github/main'));
+        // git fetch origin && git log main..origin/main
+        // To check if there are commits in your local branch that are not in the remote: git log origin/main..main
+        $output = $this->ansiToHtml(shell_exec('git fetch origin && git log HEAD..origin/main'));
         $this->isUpdateAvailable = empty($output) ? false : true;
 
         if ($showNotification) {
@@ -66,8 +66,8 @@ class UpdateManagement extends Page
 
     private function installAndUpdateNow()
     {
-        $commandToUpdate = app()->environment('local') ? null : '&& git rebase github/main main';
-        $output = $this->ansiToHtml(shell_exec("git fetch github $commandToUpdate"));
+        $commandToUpdate = app()->environment('local') ? null : '&& git rebase origin/main main';
+        $output = $this->ansiToHtml(shell_exec("git fetch origin $commandToUpdate"));
         $this->checkGitUpdates();
 
         Notification::make('install_and_update_now_notification')
