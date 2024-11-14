@@ -152,7 +152,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
     {
         $key = str_replace('_version', '', $key);
         $this->serverInfo[$key] = [];
-        $this->serverInfo[$key]['logo'] = asset("assets/images/server-logos/$key.webp");
+        $this->serverInfo[$key]['logo'] = asset("assets/img/server-logos/$key.webp");
         if (isset($this->serverInfo["{$key}_version"])) {
             $this->serverInfo[$key]['version'] = $this->serverInfo["{$key}_version"];
             $this->serverInfo[$key]['description'] = 'Installed';
