@@ -28,6 +28,10 @@ class SuperAdminPanelProvider extends PanelProvider
             ->default()
             ->id('super-admin')
             ->path('super-admin')
+            ->brandName(fn() => config('app.name'))
+            ->brandLogo(fn() => asset('assets/img/logos/logo.png'))
+            ->brandLogoHeight('2rem')
+            ->favicon(fn() => asset('assets/img/favicon/favicon.png'))
             ->login()
             ->colors([
                 'primary' => Color::Amber,
