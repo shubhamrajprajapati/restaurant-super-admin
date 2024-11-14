@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\CentralLogics\Helpers;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -58,6 +59,15 @@ class Restaurant extends Model implements Sortable
 
         'other_details' => 'array',
     ];
+
+    protected $appends = [
+        'logo_full_url',
+    ];
+
+    public function getLogoFullUrlAttribute(){
+        $value = $this->logo;
+        return Helpers::get_full_url(null,$value,'public', 'restaurant-logos');
+    }
 
     public function ftp(): HasMany
     {
