@@ -67,7 +67,7 @@ class UpdateManagement extends Page
     private function installAndUpdateNow()
     {
         $commandToUpdate = app()->environment('local') ? null : '&& git rebase origin/main main';
-        $output = $this->ansiToHtml(shell_exec("git fetch origin $commandToUpdate"));
+        $output = $this->ansiToHtml(shell_exec("git fetch origin main $commandToUpdate"));
         $this->checkGitUpdates();
 
         Notification::make('install_and_update_now_notification')

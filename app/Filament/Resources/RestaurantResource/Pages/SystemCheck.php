@@ -662,15 +662,15 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             git clone https://github.com/shubhamrajprajapati/restaurant-child.git . && \
             echo '$envContent' > .env && \
             composer install --no-interaction && \
-            php artisan key:generate --force >> output.txt 2>&1 && \
-            php artisan clear-compiled >> output.txt 2>&1 && \
-            npm install >> output.txt 2>&1 && \
-            npm run build >> output.txt 2>&1 && \
-            php artisan migrate:fresh --seed --force >> output.txt 2>&1 && \
-            php artisan storage:link >> output.txt 2>&1 && \
-            ls -la >> output.txt 2>&1 && \
-            curl -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=1\" -H \"Content-Type: application/x-www-form-urlencoded\" >> output.txt 2>&1 || \
-            curl -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=0\" -H \"Content-Type: application/x-www-form-urlencoded\" >> output.txt 2>&1
+            php artisan key:generate --force >> installation-output.txt 2>&1 && \
+            php artisan clear-compiled >> installation-output.txt 2>&1 && \
+            npm install >> installation-output.txt 2>&1 && \
+            npm run build >> installation-output.txt 2>&1 && \
+            php artisan migrate:fresh --seed --force >> installation-output.txt 2>&1 && \
+            php artisan storage:link >> installation-output.txt 2>&1 && \
+            ls -la >> installation-output.txt 2>&1 && \
+            curl -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=1\" -H \"Content-Type: application/x-www-form-urlencoded\" >> installation-output.txt 2>&1 || \
+            curl -X POST $updateInstallationStatusUrl -d \"id=$restaurantId&status=0\" -H \"Content-Type: application/x-www-form-urlencoded\" >> installation-output.txt 2>&1
         ";
 
         $response = $this->runInstallationDirectoryCmd(append: $command, return :true);
