@@ -34,7 +34,7 @@ class UpdateManagement extends Page
         // To see if there are new commits on the remote that are not in your local branch:
         // git fetch origin && git log main..origin/main
         // To check if there are commits in your local branch that are not in the remote: git log origin/main..main
-        $output = $this->ansiToHtml(shell_exec('git fetch origin && git log HEAD..origin/main'));
+        $output = $this->ansiToHtml(shell_exec('git fetch origin 2>&1 && git log HEAD..origin/main 2>&1'));
         $this->isUpdateAvailable = empty($output) ? false : true;
 
         if ($showNotification) {
@@ -66,12 +66,12 @@ class UpdateManagement extends Page
 
     private function installAndUpdateNow()
     {
-        $commandToUpdate = app()->environment('local') ? null : '&& git rebase origin/main main';
-        $output = $this->ansiToHtml(shell_exec("git fetch origin main $commandToUpdate"));
+        $commandToUpdate = app()->environment('local') ? null : '&& git rebase origin/main main 2>&1';
+        $output = $this->ansiToHtml(shell_exec("git fetch origin main 2>&1 $commandToUpdate"));
         $this->checkGitUpdates();
 
         // After a successful rebase, install npm dependencies, build assets, and run database migrations if applicable
-        $npmAndMigrationsOutput = empty($output) ? null : shell_exec("npm i && npm run build && php artisan migrate --force");
+        $npmAndMigrationsOutput = empty($output) ? null : shell_exec("npm i 2>&1 && npm run build 2>&1 && php artisan migrate --force 2>&1");
 
         Notification::make('install_and_update_now_notification')
             ->title('Update Installed Successfully!')
@@ -101,8 +101,8 @@ class UpdateManagement extends Page
                             ->action(function () {
                                 $notification = new \stdClass();
                                 try {
-                                    $applicationOptimize = shell_exec('cd .. && php artisan optimize');
-                                    $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize');
+                                    $applicationOptimize = shell_exec('cd .. && php artisan optimize 2>&1');
+                                    $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize 2>&1');
 
                                     $notification->title = "Optimization Completed Successfully!";
                                     $notification->body = "<div class='overflow-x-auto'><pre>{$applicationOptimize} {$filamentOptimize}</pre><br></div>";
@@ -122,8 +122,8 @@ class UpdateManagement extends Page
                             ->size(ActionSize::ExtraSmall)
                             ->color('danger')
                             ->action(function () {
-                                $applicationOptimize = shell_exec('cd .. && php artisan optimize:clear');
-                                $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize-clear');
+                                $applicationOptimize = shell_exec('cd .. && php artisan optimize:clear 2>&1');
+                                $filamentOptimize = shell_exec('cd .. && php artisan filament:optimize-clear 2>&1');
 
                                 $notification = new \stdClass();
                                 $notification->title = "Optimization Cleared Successfully!";
