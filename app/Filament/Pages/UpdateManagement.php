@@ -70,9 +70,12 @@ class UpdateManagement extends Page
         $output = $this->ansiToHtml(shell_exec("git fetch origin main $commandToUpdate"));
         $this->checkGitUpdates();
 
+        // After a successful rebase, install npm dependencies, build assets, and run database migrations if applicable
+        $npmAndMigrationsOutput = empty($output) ? null : shell_exec("npm i && npm run build && php artisan migrate --force");
+
         Notification::make('install_and_update_now_notification')
             ->title('Update Installed Successfully!')
-            ->body(join(["The latest update has been installed. Thank you for keeping your application up to date! You can now enjoy the new features and improvements.", empty($output) ? null : "<br><br><div class='overflow-x-auto'><pre>{$output}</pre><br><div>"]))
+            ->body(join(["The latest update has been installed. Thank you for keeping your application up to date! You can now enjoy the new features and improvements.", empty($output) ? null : "<br><br><div class='overflow-x-auto'><pre>{$output}</pre><br><div>", empty($npmAndMigrationsOutput) ? null : "<br><br><div class='overflow-x-auto'><pre>{$npmAndMigrationsOutput}</pre><br><div>"]))
             ->success()
             ->send();
     }
