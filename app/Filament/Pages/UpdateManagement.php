@@ -71,7 +71,7 @@ class UpdateManagement extends Page
         $this->checkGitUpdates();
 
         // After a successful rebase, install npm dependencies, build assets, and run database migrations if applicable
-        $npmAndMigrationsOutput = empty($output) ? null : shell_exec("npm i 2>&1 && npm run build 2>&1 && php artisan migrate --force 2>&1");
+        $npmAndMigrationsOutput = empty($output) ? null : shell_exec("php artisan migrate --force 2>&1 && npm install 2>&1 && npm run build 2>&1");
 
         Notification::make('install_and_update_now_notification')
             ->title('Update Installed Successfully!')
