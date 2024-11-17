@@ -680,7 +680,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
 
     private function updateApp()
     {
-        $this->runSshOnRemoteServer('git fetch && git pull');
+        $this->runSshOnRemoteServer('git fetch origin main 2>&1 && git rebase origin/main main 2>&1 && php artisan migrate --force 2>&1 && npm install 2>&1 && npm run build 2>&1');
     }
 
     private function runInstallationDirectoryCmd(?string $command = null, string $append = 'ls -la', bool $showNotification = true, bool $return = false)
