@@ -17,7 +17,16 @@ class UpdateManagement extends Page
 
     protected static string $view = 'filament.pages.update-management';
 
-    protected bool $isUpdateAvailable = false;
+    protected static bool $isUpdateAvailable = false;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return self::$isUpdateAvailable ? 'New' : 'Up-to-date';
+    }
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return self::$isUpdateAvailable ? 'warning' : 'success';
+    }
 
     public function mount()
     {
@@ -35,14 +44,14 @@ class UpdateManagement extends Page
         // git fetch origin && git log main..origin/main
         // To check if there are commits in your local branch that are not in the remote: git log origin/main..main
         $output = $this->ansiToHtml(shell_exec('git fetch origin 2>&1 && git log HEAD..origin/main 2>&1'));
-        $this->isUpdateAvailable = empty($output) ? false : true;
+        self::$isUpdateAvailable = empty($output) ? false : true;
 
         if ($showNotification) {
             Notification::make('check_for_updates_notification')
-                ->title(fn() => $this->isUpdateAvailable ? 'Update Available!' : 'No Updates Available')
-                ->body(fn() => $this->isUpdateAvailable ? 'A new update is ready to install. Click the button below to install the latest features and improvements.' : 'Your application is up to date! You are currently using the latest version with all features and improvements.')
-                ->color(fn() => $this->isUpdateAvailable ? 'success' : 'info')
-                ->icon(fn() => $this->isUpdateAvailable ? 'herocion-o-check-circle' : 'heroicon-o-information-circle')
+                ->title(fn() => self::$isUpdateAvailable ? 'Update Available!' : 'No Updates Available')
+                ->body(fn() => self::$isUpdateAvailable ? 'A new update is ready to install. Click the button below to install the latest features and improvements.' : 'Your application is up to date! You are currently using the latest version with all features and improvements.')
+                ->color(fn() => self::$isUpdateAvailable ? 'success' : 'info')
+                ->icon(fn() => self::$isUpdateAvailable ? 'herocion-o-check-circle' : 'heroicon-o-information-circle')
                 ->send();
         }
 
@@ -85,7 +94,7 @@ class UpdateManagement extends Page
         return $infolist
             ->state([
                 'updates' => $this->checkGitUpdates(),
-                'heading' => fn() => $this->isUpdateAvailable ? 'Updates available' : 'You\'re up to date',
+                'heading' => fn() => self::$isUpdateAvailable ? 'Updates available' : 'You\'re up to date',
                 'deployment_history' => 'Deployment History: Recent Changes',
             ])
             ->schema([
@@ -136,15 +145,15 @@ class UpdateManagement extends Page
                     ->collapsible()
                     ->schema([
                         Infolists\Components\TextEntry::make('heading')
-                            ->icon(fn() => $this->isUpdateAvailable ? 'heroicon-o-arrow-path' : 'heroicon-s-check-circle')
-                            ->color(fn() => $this->isUpdateAvailable ? 'info' : 'success')
-                            ->iconColor(fn() => $this->isUpdateAvailable ? 'info' : 'success')
+                            ->icon(fn() => self::$isUpdateAvailable ? 'heroicon-o-arrow-path' : 'heroicon-s-check-circle')
+                            ->color(fn() => self::$isUpdateAvailable ? 'info' : 'success')
+                            ->iconColor(fn() => self::$isUpdateAvailable ? 'info' : 'success')
                             ->hiddenLabel()
                             ->helperText(fn() => 'Last checked: Today, ' . $this->getFormattedTime())
                             ->size(TextEntrySize::Large)
                             ->suffixActions([
                                 Infolists\Components\Actions\Action::make('install_update')
-                                    ->visible($this->isUpdateAvailable)
+                                    ->visible(self::$isUpdateAvailable)
                                     ->label('Install Update')
                                     ->color('success')
                                     ->icon('heroicon-o-folder-arrow-down')
@@ -157,7 +166,7 @@ class UpdateManagement extends Page
                                         $this->installAndUpdateNow();
                                     }),
                                 Infolists\Components\Actions\Action::make('check_for_update')
-                                    ->hidden($this->isUpdateAvailable)
+                                    ->hidden(self::$isUpdateAvailable)
                                     ->label('Check for updates')
                                     ->icon('heroicon-o-arrow-path')
                                     ->button()
@@ -167,7 +176,7 @@ class UpdateManagement extends Page
                             ]
                             ),
                         Infolists\Components\TextEntry::make('updates')
-                            ->visible($this->isUpdateAvailable)
+                            ->visible(self::$isUpdateAvailable)
                             ->html()
                             ->extraAttributes(['class' => 'overflow-x-auto'])
                             ->prefix(fn() => new HtmlString('<pre>'))
