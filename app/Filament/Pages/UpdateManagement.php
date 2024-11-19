@@ -19,32 +19,39 @@ class UpdateManagement extends Page
 
     protected static bool $isUpdateAvailable = false;
 
+    protected static ?string $updates;
+
     public static function getNavigationBadge(): ?string
     {
-        return self::$isUpdateAvailable ? 'New' : 'Up-to-date';
+        return empty(self::checkForGitUpdatesCmdResult()) ? 'Up-to-date' : 'New';
     }
     public static function getNavigationBadgeColor(): ?string
     {
-        return self::$isUpdateAvailable ? 'warning' : 'success';
+        return empty(self::checkForGitUpdatesCmdResult()) ? 'success' : 'warning';
     }
 
     public function mount()
     {
-        //
+        self::checkGitUpdates();
     }
 
     public function change_log()
     {
-        return $this->ansiToHtml(shell_exec('git log --graph'));
+        return self::ansiToHtml(shell_exec('git log --graph'));
     }
 
-    private function checkGitUpdates($showNotification = false)
+    private static function checkForGitUpdatesCmdResult()
+    {
+        return shell_exec('git fetch origin 2>&1 && git log HEAD..origin/main 2>&1');
+    }
+
+    private function checkGitUpdates($showNotification = false): void
     {
         // To see if there are new commits on the remote that are not in your local branch:
         // git fetch origin && git log main..origin/main
         // To check if there are commits in your local branch that are not in the remote: git log origin/main..main
-        $output = $this->ansiToHtml(shell_exec('git fetch origin 2>&1 && git log HEAD..origin/main 2>&1'));
-        self::$isUpdateAvailable = empty($output) ? false : true;
+        self::$updates = self::ansiToHtml(self::checkForGitUpdatesCmdResult());
+        self::$isUpdateAvailable = empty(self::$updates) ? false : true;
 
         if ($showNotification) {
             Notification::make('check_for_updates_notification')
@@ -54,8 +61,6 @@ class UpdateManagement extends Page
                 ->icon(fn() => self::$isUpdateAvailable ? 'herocion-o-check-circle' : 'heroicon-o-information-circle')
                 ->send();
         }
-
-        return $output;
     }
 
     private function getFormattedTime(): string
@@ -73,11 +78,11 @@ class UpdateManagement extends Page
             ->send();
     }
 
-    private function installAndUpdateNow()
+    private function installAndUpdateNow(): void
     {
         $commandToUpdate = app()->environment('local') ? null : '&& git rebase origin/main main 2>&1';
-        $output = $this->ansiToHtml(shell_exec("git fetch origin main 2>&1 $commandToUpdate"));
-        $this->checkGitUpdates();
+        $output = self::ansiToHtml(shell_exec("git fetch origin main 2>&1 $commandToUpdate"));
+        self::checkGitUpdates();
 
         // After a successful rebase, install npm dependencies, build assets, and run database migrations if applicable
         $npmAndMigrationsOutput = empty($output) ? null : shell_exec("php artisan migrate --force 2>&1 && npm install 2>&1 && npm run build 2>&1");
@@ -93,7 +98,7 @@ class UpdateManagement extends Page
     {
         return $infolist
             ->state([
-                'updates' => $this->checkGitUpdates(),
+                'updates' => fn() => self::$updates,
                 'heading' => fn() => self::$isUpdateAvailable ? 'Updates available' : 'You\'re up to date',
                 'deployment_history' => 'Deployment History: Recent Changes',
             ])
@@ -101,6 +106,7 @@ class UpdateManagement extends Page
                 Infolists\Components\Section::make()
                     ->heading('Website Updates')
                     ->compact()
+                    ->extraAttributes(['class' => self::$isUpdateAvailable ? '!bg-warning-300/20 dark:!bg-warning-400/5' : '!bg-green-300/20 dark:!bg-green-400/5'])
                     ->headerActions([
                         Infolists\Components\Actions\Action::make('Optimize')
                             ->label('Optimize Now')
@@ -146,8 +152,8 @@ class UpdateManagement extends Page
                     ->schema([
                         Infolists\Components\TextEntry::make('heading')
                             ->icon(fn() => self::$isUpdateAvailable ? 'heroicon-o-arrow-path' : 'heroicon-s-check-circle')
-                            ->color(fn() => self::$isUpdateAvailable ? 'info' : 'success')
-                            ->iconColor(fn() => self::$isUpdateAvailable ? 'info' : 'success')
+                            ->color(fn() => self::$isUpdateAvailable ? 'warning' : 'success')
+                            ->iconColor(fn() => self::$isUpdateAvailable ? 'warning' : 'success')
                             ->hiddenLabel()
                             ->helperText(fn() => 'Last checked: Today, ' . $this->getFormattedTime())
                             ->size(TextEntrySize::Large)
@@ -190,7 +196,7 @@ class UpdateManagement extends Page
             ]);
     }
 
-    protected function ansiToHtml($text)
+    protected static function ansiToHtml($text)
     {
         if ($text) {
             // Escape HTML special characters
