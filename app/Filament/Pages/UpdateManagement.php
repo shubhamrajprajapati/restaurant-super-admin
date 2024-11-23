@@ -17,14 +17,15 @@ class UpdateManagement extends Page
 
     protected static string $view = 'filament.pages.update-management';
 
-    protected static bool $isUpdateAvailable = false;
+    public static bool $isUpdateAvailable = false;
 
-    protected static ?string $updates;
+    public static ?string $updates;
 
     public static function getNavigationBadge(): ?string
     {
         return empty(self::checkForGitUpdatesCmdResult()) ? 'Up-to-date' : 'New';
     }
+
     public static function getNavigationBadgeColor(): ?string
     {
         return empty(self::checkForGitUpdatesCmdResult()) ? 'success' : 'warning';
@@ -40,12 +41,7 @@ class UpdateManagement extends Page
         return self::ansiToHtml(shell_exec('git log --graph'));
     }
 
-    private static function checkForGitUpdatesCmdResult()
-    {
-        return shell_exec('git fetch origin 2>&1 && git log HEAD..origin/main 2>&1');
-    }
-
-    private function checkGitUpdates($showNotification = false): void
+    public function checkGitUpdates($showNotification = false): void
     {
         // To see if there are new commits on the remote that are not in your local branch:
         // git fetch origin && git log main..origin/main
@@ -63,12 +59,12 @@ class UpdateManagement extends Page
         }
     }
 
-    private function getFormattedTime(): string
+    public function getFormattedTime(): string
     {
         return Carbon::now()->format('h:i A T');
     }
 
-    private function sendNotification(\stdClass $data = null): void
+    public function sendNotification(\stdClass $data = null): void
     {
         Notification::make()
             ->title($data?->title)
@@ -78,7 +74,7 @@ class UpdateManagement extends Page
             ->send();
     }
 
-    private function installAndUpdateNow(): void
+    public function installAndUpdateNow(): void
     {
         $commandToUpdate = app()->environment('local') ? null : '&& git rebase origin/main main 2>&1';
         $output = self::ansiToHtml(shell_exec("git fetch origin main 2>&1 $commandToUpdate"));
@@ -237,5 +233,10 @@ class UpdateManagement extends Page
         }
 
         return $text;
+    }
+
+    private static function checkForGitUpdatesCmdResult()
+    {
+        return shell_exec('git fetch origin 2>&1 && git log HEAD..origin/main 2>&1');
     }
 }
