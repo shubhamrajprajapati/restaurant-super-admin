@@ -685,6 +685,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             git rebase origin/main main 2>&1 && \
             composer install --no-dev --optimize-autoloader 2>&1 && \
             php artisan migrate --force 2>&1 && \
+            php artisan filament:optimize-clear 2>&1 && \
             npm install 2>&1 && \
             npm run build 2>&1 && \
             php artisan optimize 2>&1 && \
