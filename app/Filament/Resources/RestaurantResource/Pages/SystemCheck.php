@@ -689,8 +689,7 @@ class SystemCheck extends Page implements HasForms, HasInfolists, HasTable
             npm install 2>&1 && \
             npm run build 2>&1 && \
             php artisan optimize 2>&1 && \
-            php artisan filament:optimize 2>&1 && \
-            php artisan config:clear 2>&1
+            php artisan filament:optimize 2>&1
         ');
     }
 
